@@ -60,40 +60,59 @@ def make_mutant_path(creature):
     return 'mutated_%s' % creature
 
 
+def load_creature(creature_path):
+    fp = open(creature_path)
+    creature_content = fp.read()
+    fp.close()
+    return creature_content
+
+
+def save_creature(creature_path, creature_content):
+    fp = open(creature_path, 'w')
+    fp.write(creature_content)
+    fp.close()
+
+
 def mutate(creature, mutations, no_environment):
     successful_mutations = 0
     failed_mutations = 0
     seed = time.time()
     print('seed: %f' % seed)
     random.seed(seed)
+
     mutated_creature = make_mutant_path(creature)
     creature_environment = make_environment_path(creature)
     if not os.path.exists(creature_environment):
         no_environment = True
-    fp_mutant = open(creature)
-    creature_content = fp_mutant.read()
-    fp_mutant.close()
-    fp_mutant = open(mutated_creature, 'w')
-    fp_mutant.write(creature_content)
-    fp_mutant.close()
+
+    creature_content = load_creature(creature)
+    save_creature(mutated_creature, creature_content)
+
     for mutation in range(mutations):
         mutated_content = flawed_copy(creature_content)
-        fp_mutant = open(mutated_creature, 'w')
-        fp_mutant.write(mutated_content)
-        fp_mutant.close()
+        print('===== new mutant =====')
+        print(mutated_content)
+        print('===== new =====')
+        save_creature(mutated_creature, mutated_content)
+
         if no_environment:
             cmd = mutated_creature
         else:
             cmd = creature_environment
+
         if subprocess.call(['python', cmd]) == 0:
             successful_mutations += 1
             creature_content = mutated_content
+            print('===== succeeded - new creature =====')
+            print(creature_content)
+            print('===== succeeded =====')
         else:
             failed_mutations += 1
+            print('===== failed - reverting to this =====')
+            print(creature_content)
+            print('===== failed =====')
 
-    fp_mutant = open(mutated_creature, 'w')
-    fp_mutant.write(creature_content)
-    fp_mutant.close()
+    save_creature(mutated_creature, creature_content)
 
     print('Successful mutations: %d' % successful_mutations)
     print('Failed mutations: %d' % failed_mutations)
