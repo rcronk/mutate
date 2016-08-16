@@ -4,6 +4,8 @@ import string
 import subprocess
 import argparse
 import os
+import py_compile
+import zipfile
 
 
 def flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25):
@@ -16,7 +18,15 @@ def flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25):
                               ('insert', insert),
                               ('append', append)])
 
-    mutation = random.SystemRandom().choice(string.ascii_letters + string.digits + '\n:=%%')
+    python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ', ' global ', ' or ', ' with ',
+                       ' assert ', ' else ', ' if ', ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
+                       ' class ', ' exec ', ' in ', ' raise ', ' continue ', ' finally ', ' is ', ' return ', ' def ',
+                       ' for ', ' lambda ', ' try ']
+
+    mutation = random.SystemRandom().choice(list(string.ascii_letters) +
+                                            list(string.digits) +
+                                            python_keywords +
+                                            list('\n:=%%'))
 
     if len(source) == 0:
         source = mutation
@@ -85,6 +95,11 @@ def mutate(creature, mutations, no_environment):
     if not os.path.exists(creature_environment):
         no_environment = True
 
+    if no_environment:
+        cmd = mutated_creature
+    else:
+        cmd = creature_environment
+
     creature_content = load_creature(creature)
     save_creature(mutated_creature, creature_content)
 
@@ -95,11 +110,7 @@ def mutate(creature, mutations, no_environment):
         print('===== new =====')
         save_creature(mutated_creature, mutated_content)
 
-        if no_environment:
-            cmd = mutated_creature
-        else:
-            cmd = creature_environment
-
+        py_compile.compile(cmd) # Sometimes there seems to be a race that causes quick changes not to be compiled
         if subprocess.call(['python', cmd]) == 0:
             successful_mutations += 1
             creature_content = mutated_content
@@ -118,10 +129,28 @@ def mutate(creature, mutations, no_environment):
     print('Failed mutations: %d' % failed_mutations)
 
 
+def setup():
+    # Make sure we have our spelling list extracted
+    txt_name = 'wordsEN.txt'
+    if not os.path.exists(txt_name):
+        zip_name = 'wordsEn.zip'
+        if os.path.exists(zip_name):
+            if zipfile.is_zipfile(zip_name):
+                with zipfile.ZipFile(zip_name) as zip_file:
+                    zip_file.extractall()
+            else:
+                print('It appears that %s is not a valid zip file.' % zip_name)
+        else:
+            print('For spell checking, we need %s from'
+                  'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip in the current directory.'
+                  'Did not find this file.' % zip_name)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("creature", help="Path to the creature to mutate.  Mutated creature will be saved as mutated_<original_name>.py")
     parser.add_argument("mutations", help="Number of mutations", type=int)
     parser.add_argument("--no-environment", help="Don't use the creature's environment.", action="store_true")
     args = parser.parse_args()
+    setup()
     mutate(args.creature, args.mutations, args.no_environment)
