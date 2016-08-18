@@ -19,7 +19,7 @@ class TestMutate(unittest.TestCase):
                    ('kiwi', kiwi)]
         results = {}
         for i in range(0, iterations):
-            choice = mutate.weighted_choice(choices)
+            choice = mutate.Creature._weighted_choice(choices)
             if choice in results:
                 results[choice] += 1
             else:
@@ -34,7 +34,7 @@ class TestMutate(unittest.TestCase):
     def test_flawed_copy(self):
         for i in range(1000):
             creature = 'abcdefg'
-            result = mutate.flawed_copy(creature)
+            result = mutate.Creature._flawed_copy(creature)
             if len(result) == len(creature): # overwrite
                 pass # an overwrite is usually different, but rarely the same so we can't test anything here
             else:

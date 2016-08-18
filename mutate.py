@@ -10,11 +10,18 @@ import zipfile
 
 class Creature(object):
     def __init__(self, path_to_creature):
+        assert (os.path.sep not in path_to_creature)
         self.path_to_creature = path_to_creature
-        self.make_mutant_path()
-        self.make_test_path()
+        self.test_path = 'test_%s' % self.path_to_creature
+        self.mutant_path = 'mutated_%s' % self.path_to_creature
 
-    def weighted_choice(self, choices):
+        fp = open(self.path_to_creature)
+        self.creature_content = fp.read()
+        fp.close()
+
+
+    @staticmethod
+    def _weighted_choice(choices):
         """ Picks a choice at random but with weight
             choices: list of tuples in the form (choice, weight)
             choice:  list
@@ -28,15 +35,16 @@ class Creature(object):
                 return c
             upto += w
 
-    def flawed_copy(self, source, prepend=25, overwrite=25, insert=25, append=25):
+    @staticmethod
+    def _flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25):
         """ Copies source and returns it with flaws according to the weighted
             flaws passed in.
             source : list of characters
         """
-        defect = self.weighted_choice([('prepend', prepend),
-                                  ('overwrite', overwrite),
-                                  ('insert', insert),
-                                  ('append', append)])
+        defect = Creature._weighted_choice([('prepend', prepend),
+                                            ('overwrite', overwrite),
+                                            ('insert', insert),
+                                            ('append', append)])
 
         python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ', ' global ', ' or ', ' with ',
                            ' assert ', ' else ', ' if ', ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
@@ -65,20 +73,6 @@ class Creature(object):
                 raise ('Invalid defect: %s' % defect)
         return source
 
-    def make_test_path(self):
-        assert(os.path.sep not in self.path_to_creature)
-        self.test_path = 'test_%s' % self.path_to_creature
-
-    def make_mutant_path(self):
-        assert(os.path.sep not in self.path_to_creature)
-        self.mutant_path = 'mutated_%s' % self.path_to_creature
-
-    def load(self, creature_path):
-        fp = open(creature_path)
-        creature_content = fp.read()
-        fp.close()
-        return creature_content
-
     def save_mutant(self, creature_content):
         fp = open(self.mutant_path, 'w')
         fp.write(creature_content)
@@ -99,11 +93,10 @@ class Creature(object):
         else:
             cmd = self.test_path
 
-        creature_content = self.load(self.path_to_creature)
-        self.save_mutant(creature_content)
+        self.save_mutant(self.creature_content)
 
         for mutation in range(mutations):
-            mutated_content = self.flawed_copy(creature_content)
+            mutated_content = self._flawed_copy(self.creature_content)
             print('===== new mutant =====')
             print(mutated_content)
             print('===== new =====')
@@ -112,17 +105,18 @@ class Creature(object):
             py_compile.compile(cmd) # Sometimes there seems to be a race that causes quick changes not to be compiled
             if subprocess.call(['python', cmd]) == 0:
                 successful_mutations += 1
-                creature_content = mutated_content
+                self.creature_content = mutated_content
                 print('===== succeeded - new creature =====')
-                print(creature_content)
+                print(self.creature_content)
                 print('===== succeeded =====')
             else:
                 failed_mutations += 1
                 print('===== failed - reverting to this =====')
-                print(creature_content)
+                print(self.creature_content)
                 print('===== failed =====')
+                self.save_mutant(self.creature_content)
 
-        self.save_mutant(creature_content)
+        self.save_mutant(self.creature_content)
 
         print('Successful mutations: %d' % successful_mutations)
         print('Failed mutations: %d' % failed_mutations)
