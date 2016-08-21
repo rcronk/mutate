@@ -4,7 +4,7 @@ import string
 import subprocess
 import argparse
 import os
-import py_compile
+import glob
 import zipfile
 
 
@@ -77,6 +77,9 @@ class Creature(object):
         fp = open(self.mutant_path, 'w')
         fp.write(creature_content)
         fp.close()
+        #if glob.glob('__pycache__\\*.pyc'):
+        #    subprocess.run(['del __pycache__\\*.pyc'], shell=True)
+        time.sleep(1)
 
     def mutate(self, mutations, no_environment):
         successful_mutations = 0
@@ -102,19 +105,23 @@ class Creature(object):
             print('===== new =====')
             self.save_mutant(mutated_content)
 
-            py_compile.compile(cmd) # Sometimes there seems to be a race that causes quick changes not to be compiled
             if subprocess.call(['python', cmd]) == 0:
                 successful_mutations += 1
                 self.creature_content = mutated_content
                 print('===== succeeded - new creature =====')
                 print(self.creature_content)
                 print('===== succeeded =====')
+                if subprocess.call(['python', cmd]) != 0:
+                    raise Exception('Succeeded creature failed!!!')
             else:
                 failed_mutations += 1
                 print('===== failed - reverting to this =====')
                 print(self.creature_content)
                 print('===== failed =====')
                 self.save_mutant(self.creature_content)
+                print('===== testing reverted creature =====')
+                if subprocess.call(['python', cmd]) != 0:
+                    raise Exception('Reverted creature failed!!!')
 
         self.save_mutant(self.creature_content)
 
