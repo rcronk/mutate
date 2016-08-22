@@ -77,9 +77,11 @@ class Creature(object):
         fp = open(self.mutant_path, 'w')
         fp.write(creature_content)
         fp.close()
+        if os.path.exists('__pycache__\\mutated_body_plans.cpython-35.pyc'):
+            os.unlink('__pycache__\\mutated_body_plans.cpython-35.pyc')
         #if glob.glob('__pycache__\\*.pyc'):
         #    subprocess.run(['del __pycache__\\*.pyc'], shell=True)
-        time.sleep(1)
+        #time.sleep(1)
 
     def mutate(self, mutations, no_environment):
         successful_mutations = 0
