@@ -1,12 +1,13 @@
 import unittest
 import subprocess
 
-import mutated_hello_world_tested
+import mutated_english
+import mutate
 
 
-class TestHelloWorld(unittest.TestCase):
+class TestEnglish(unittest.TestCase):
     def test_return(self):
-        self.assertEqual('Hello World!', mutated_hello_world_tested.hello_world())
+        self.assertTrue(mutate.spelled_correctly(mutated_english.quote))
         self.assertEqual(0, subprocess.call(['pylint', 'mutated_hello_world_tested.py']))
 
 

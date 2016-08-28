@@ -1,44 +1,9 @@
-3577
 
-19933749
-72991121464566851 or l2987V521372571X3A
-79965474748227293884 or 7387584
-683203039624272
-6476751740950227E98 is 6
-24967721 or tYk8Y4
-444
-515and 7%464
-1779245422218
-5 is 85 or 495
-79372
-3
-932%6437%94671is 5295 is ze
-7116760151853 and 190775or mB7N6Jhw4AE42EdWrz48j5d or s84Uk17UPr85BVREy in sspYhis3h5%L9m8a1ImWmK8eR7mtYe4RQsAdVm4Iwy6gNu1xKB2%VRM9
-50%6
+
+U"h"" e 7MkiVtj ADc%pqAis lambda  pl yoTUh AtnKdErd heltF2I bDeaW iwZPQdKMroYeHmr. pfiWt 3pfa4t9d"""
+
+
 def hello_world():
- 
-   return 'Hello World!'
-
-0 and UdUrbV2y5NAL5a3%bUZcJ%llfmGrJ and DungOn and ScfnAVAWPl and U in wToGsqX is GhU17mlNomtCjO2asENE is X3g is X in cCOXexDv3TCtt5 and MLFmqlALCWeoQHcg%Ia7Q in n8eHoUI in dHl1%pFuNVsi4Os and ufuO and uSdd5MsQ0QsI in WD9I and q%UicQ%LLQAOSiZ%5%rF%qUL0XVGkJOg7g is WnqQ%aD9qmfK and Z is xLkJ3o9NH1NZsfSpJIhVQqiq6x and iJbza17pemHdk is NRoEFzaKMD%bPEUQVAwjjFZ and sDDCwEqiuybWwMu is RP3mcfR in sb83 in tvmtJNIpS1IzzNtM5cnFvoVb0Ix%rVcKah8yrx is Ak is Gsfdpl4dYwl9F not  in fMBYvBZM1RN and s0t and rni6H4bMF40%zyZqIEcb9W4dQ2LLOP0u7ZtFUnbcTAw in sQGxy and q and Svh0ur8F9CIU3iqo and cHYjYjyjTvVbFRC is p4h3UMfshORR in t%MxU7vu6krRr1VUMSLZ57uBOgu and  QVfo7eS is kE%c and hS7ThN and Wal2bnyoAK is NQB8R in hTZaBpuHHFqVjY4G3825wK%QnXM1mYCLMu in kABQd6QZ4CrPpZDOobW7g2sIa8nVYQ and S is qXSmCjsC%iE9tE91vtZ1DFMAd2YDkg3pb%hlfEhYP830zK4qq3 is   HqotlnoqBNVv7bZDSWKj922hhRp5AJb0AEFmBpge29qc7L29A%l0w6 and w%OpqpEtZJaZAkpByp and TtDEKaSY4PpkueEJ0nF29D3JdX in pl5211Kda%qfg in MYQHkV2YsElU and M4IdNWEOSJ7L in WsycSDTOwP1s3H60YO2O0bu1Ng7qI0WDLoosTdWzr3dVfBkczX9osCLhETwX is FTo5BPuS9QvJzygYn0DCfS0Kekl3YSUprOWE092 is n526dYt in l8 and KFCqU9 and mcs03hfRdRT2H and 79e927432444137489405in 945E819is A4C9dY45ct5 in IYJ or 88881 or 3%r1e7o7V
-76
-3357jis 53E4976 is not  8 in 09630J
-
-327j
-1087J
-78j
-3J
-
-85221
-89
-63
-
-211
-5892J
-5
-622J
-704j
-5
-443j
-9
-47j
-144J
+    """%ThAxsT :r asse7t :aW  raise globIXF reCturn a eVx0c  rnt O pqcoxAti1ndwhi%le ue  if au8sp pa
+ss bl aTUs5S t%L stri retfMuZ7pr2X3ontinue nglaI eWAW Kiel elif l VCKnS 0Wf=39ld! wiWh except  A="""
+    return 'Hello World!'

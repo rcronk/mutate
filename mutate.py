@@ -36,7 +36,7 @@ class Creature(object):
             upto += w
 
     @staticmethod
-    def _flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25):
+    def _flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25, use_keywords=True):
         """ Copies source and returns it with flaws according to the weighted
             flaws passed in.
             source : list of characters
@@ -46,10 +46,13 @@ class Creature(object):
                                             ('insert', insert),
                                             ('append', append)])
 
-        python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ', ' global ', ' or ', ' with ',
-                           ' assert ', ' else ', ' if ', ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
-                           ' class ', ' exec ', ' in ', ' raise ', ' continue ', ' finally ', ' is ', ' return ', ' def ',
-                           ' for ', ' lambda ', ' try ']
+        if use_keywords:
+            python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ', ' global ', ' or ', ' with ',
+                               ' assert ', ' else ', ' if ', ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
+                               ' class ', ' exec ', ' in ', ' raise ', ' continue ', ' finally ', ' is ', ' return ', ' def ',
+                               ' for ', ' lambda ', ' try ']
+        else:
+            python_keywords = []
 
         mutation = random.SystemRandom().choice(list(string.ascii_letters) +
                                                 list(string.digits) +
@@ -77,13 +80,11 @@ class Creature(object):
         fp = open(self.mutant_path, 'w')
         fp.write(creature_content)
         fp.close()
-        if os.path.exists('__pycache__\\mutated_body_plans.cpython-35.pyc'):
-            os.unlink('__pycache__\\mutated_body_plans.cpython-35.pyc')
-        #if glob.glob('__pycache__\\*.pyc'):
-        #    subprocess.run(['del __pycache__\\*.pyc'], shell=True)
-        #time.sleep(1)
+        pyc_file = '__pycache__\\%s.cpython-35.pyc' % os.path.splitext(self.mutant_path)[0]
+        if os.path.exists(pyc_file):
+            os.unlink(pyc_file)
 
-    def mutate(self, mutations, no_environment):
+    def mutate(self, mutations, no_environment, use_keywords):
         successful_mutations = 0
         failed_mutations = 0
         seed = time.time()
@@ -101,7 +102,7 @@ class Creature(object):
         self.save_mutant(self.creature_content)
 
         for mutation in range(mutations):
-            mutated_content = self._flawed_copy(self.creature_content)
+            mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
             print('===== new mutant =====')
             print(mutated_content)
             print('===== new =====')
@@ -147,13 +148,22 @@ def setup():
                   'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip in the current directory.'
                   'Did not find this file.' % zip_name)
 
+def spelled_correctly(sentence):
+    with open('wordsEN.txt') as word_file:
+        all_words = [x.strip() for x in word_file]
+    for word in sentence.split():
+        clean_word = word.strip(',. ;:').lower()
+        if clean_word not in all_words:
+            return False
+    return True
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("creature", help="Path to the creature to mutate.  Mutated creature will be saved as mutated_<original_name>.py")
     parser.add_argument("mutations", help="Number of mutations", type=int)
     parser.add_argument("--no-environment", help="Don't use the creature's environment.", action="store_true")
+    parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.", action="store_false")
     args = parser.parse_args()
     setup()
     creature = Creature(args.creature)
-    creature.mutate(args.mutations, args.no_environment)
+    creature.mutate(args.mutations, args.no_environment, args.no_keywords)
