@@ -1,3 +1,5 @@
+""" mutate.py - a mutation algorithm. """
+
 import time
 import random
 import string
@@ -9,16 +11,16 @@ import zipfile
 
 
 class Creature(object):
+    """ This is a creature that can duplicate itself with errors. """
     def __init__(self, path_to_creature):
-        assert (os.path.sep not in path_to_creature)
+        assert os.path.sep not in path_to_creature
         self.path_to_creature = path_to_creature
         self.test_path = 'test_%s' % self.path_to_creature
         self.mutant_path = 'mutated_%s' % self.path_to_creature
 
-        fp = open(self.path_to_creature)
-        self.creature_content = fp.read()
-        fp.close()
-
+        creature_file = open(self.path_to_creature)
+        self.creature_content = creature_file.read()
+        creature_file.close()
 
     @staticmethod
     def _weighted_choice(choices):
@@ -28,12 +30,12 @@ class Creature(object):
             weight:  any integer that represents a weight for this choice
         """
         total = sum(w for c, w in choices)
-        r = random.uniform(0, total)
+        rand_num = random.uniform(0, total)
         upto = 0
-        for c, w in choices:
-            if upto + w >= r:
-                return c
-            upto += w
+        for choice, weight in choices:
+            if upto + weight >= rand_num:
+                return choice
+            upto += weight
 
     @staticmethod
     def _flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25, use_keywords=True):
@@ -47,10 +49,11 @@ class Creature(object):
                                             ('append', append)])
 
         if use_keywords:
-            python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ', ' global ', ' or ', ' with ',
-                               ' assert ', ' else ', ' if ', ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
-                               ' class ', ' exec ', ' in ', ' raise ', ' continue ', ' finally ', ' is ', ' return ', ' def ',
-                               ' for ', ' lambda ', ' try ']
+            python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ',
+                               ' global ', ' or ', ' with ', ' assert ', ' else ', ' if ',
+                               ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
+                               ' class ', ' exec ', ' in ', ' raise ', ' continue ', ' finally ',
+                               ' is ', ' return ', ' def ', ' for ', ' lambda ', ' try ']
         else:
             python_keywords = []
 
@@ -69,11 +72,11 @@ class Creature(object):
             elif defect in ('overwrite', 'insert'):
                 mutation_location = random.randint(0, len(source) - 1)
                 if defect == 'overwrite':
-                    source = source[:mutation_location] + mutation + source[mutation_location+1:]
+                    source = source[:mutation_location] + mutation + source[mutation_location + 1:]
                 else:
                     source = source[:mutation_location] + mutation + source[mutation_location:]
             else:
-                raise ('Invalid defect: %s' % defect)
+                raise 'Invalid defect: %s' % defect
         return source
 
     def save_mutant(self, creature_content):
@@ -145,8 +148,9 @@ def setup():
                 print('It appears that %s is not a valid zip file.' % zip_name)
         else:
             print('For spell checking, we need %s from'
-                  'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip in the current directory.'
-                  'Did not find this file.' % zip_name)
+                  'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip'
+                  'in the current directory.  Did not find this file.' % zip_name)
+
 
 def spelled_correctly(sentence):
     with open('wordsEN.txt') as word_file:
@@ -157,12 +161,17 @@ def spelled_correctly(sentence):
             return False
     return True
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("creature", help="Path to the creature to mutate.  Mutated creature will be saved as mutated_<original_name>.py")
+    parser.add_argument("creature",
+                        help='Path to the creature to mutate.  Mutated creature will be saved as'
+                             ' mutated_<original_name>.py')
     parser.add_argument("mutations", help="Number of mutations", type=int)
-    parser.add_argument("--no-environment", help="Don't use the creature's environment.", action="store_true")
-    parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.", action="store_false")
+    parser.add_argument("--no-environment", help="Don't use the creature's environment.",
+                        action="store_true")
+    parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
+                        action="store_false")
     args = parser.parse_args()
     setup()
     creature = Creature(args.creature)

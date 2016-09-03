@@ -1,4 +1,5 @@
 import unittest
+import subprocess
 
 import mutate
 
@@ -42,6 +43,10 @@ class TestMutate(unittest.TestCase):
                     self.assertNotEqual(result, creature)
                 else:
                     self.assertNotEqual(result, creature)
+
+    def test_pylint(self):
+        self.assertEqual(0, subprocess.call(['pylint', 'mutate.py']))
+
 
 if __name__ == '__main__':
     unittest.main()
