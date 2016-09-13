@@ -173,6 +173,9 @@ if __name__ == "__main__":
 
     print('seed: %f' % args.seed)
     random.seed(args.seed)
+    print('git id: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip())
+    if subprocess.call(['git', 'diff-index', '--quiet', 'HEAD', '--']) != 0:
+        print('git detects uncomitted changes on top of the above id.')
 
     setup()
     creature = Creature(args.creature)
