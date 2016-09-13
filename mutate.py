@@ -172,7 +172,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print('args: %s' % args)
-    print('seed: %f' % args.seed)
     random.seed(args.seed)
     print('git id: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8'))
     if subprocess.call(['git', 'diff-index', '--quiet', 'HEAD', '--']) != 0:
