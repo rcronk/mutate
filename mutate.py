@@ -1,12 +1,11 @@
 """ mutate.py - a mutation algorithm. """
 
-import time
+import argparse
+import os
 import random
 import string
 import subprocess
-import argparse
-import os
-import glob
+import time
 import zipfile
 
 
@@ -57,10 +56,10 @@ class Creature(object):
         else:
             python_keywords = []
 
-        mutation = random.SystemRandom().choice(list(string.ascii_letters) +
-                                                list(string.digits) +
-                                                python_keywords +
-                                                list('\n:=%%'))
+        mutation = random.choice(list(string.ascii_letters) +
+                                 list(string.digits) +
+                                 python_keywords +
+                                 list('\n:=%%'))
 
         if len(source) == 0:
             source = mutation
@@ -90,9 +89,6 @@ class Creature(object):
     def mutate(self, mutations, no_environment, use_keywords):
         successful_mutations = 0
         failed_mutations = 0
-        seed = time.time()
-        print('seed: %f' % seed)
-        random.seed(seed)
 
         if not os.path.exists(self.test_path):
             no_environment = True
@@ -168,11 +164,16 @@ if __name__ == "__main__":
                         help='Path to the creature to mutate.  Mutated creature will be saved as'
                              ' mutated_<original_name>.py')
     parser.add_argument("mutations", help="Number of mutations", type=int)
+    parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
     parser.add_argument("--no-environment", help="Don't use the creature's environment.",
                         action="store_true")
     parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
                         action="store_false")
     args = parser.parse_args()
+
+    print('seed: %f' % args.seed)
+    random.seed(args.seed)
+
     setup()
     creature = Creature(args.creature)
     creature.mutate(args.mutations, args.no_environment, args.no_keywords)
