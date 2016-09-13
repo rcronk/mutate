@@ -37,15 +37,18 @@ class Creature(object):
             upto += weight
 
     @staticmethod
-    def _flawed_copy(source, prepend=25, overwrite=25, insert=25, append=25, use_keywords=True):
+    def _flawed_copy(source, mutation_weights=None, use_keywords=True):
         """ Copies source and returns it with flaws according to the weighted
             flaws passed in.
             source : list of characters
         """
-        defect = Creature._weighted_choice([('prepend', prepend),
-                                            ('overwrite', overwrite),
-                                            ('insert', insert),
-                                            ('append', append)])
+        if mutation_weights is None:
+            mutation_weights = {'prepend':25, 'overwrite':25, 'insert':25, 'append':25}
+
+        defect = Creature._weighted_choice([('prepend', mutation_weights['prepend']),
+                                            ('overwrite', mutation_weights['overwrite']),
+                                            ('insert', mutation_weights['insert']),
+                                            ('append', mutation_weights['append'])])
 
         if use_keywords:
             python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ',
@@ -79,14 +82,24 @@ class Creature(object):
         return source
 
     def save_mutant(self, creature_content):
-        fp = open(self.mutant_path, 'w')
-        fp.write(creature_content)
-        fp.close()
+        """ save_mutant: Saves new mutant content to file.
+        :param creature_content: Text of file to be saved.
+        :return: None
+        """
+        mutant_path_handle = open(self.mutant_path, 'w')
+        mutant_path_handle.write(creature_content)
+        mutant_path_handle.close()
         pyc_file = '__pycache__\\%s.cpython-35.pyc' % os.path.splitext(self.mutant_path)[0]
         if os.path.exists(pyc_file):
             os.unlink(pyc_file)
 
     def mutate(self, mutations, no_environment, use_keywords):
+        """ mutate - mutates something mutations times
+        :param mutations: times to mutate
+        :param no_environment: Skip unit tests even if present
+        :param use_keywords: Use python keywords as mutations or not
+        :return: None
+        """
         successful_mutations = 0
         failed_mutations = 0
 
@@ -100,7 +113,7 @@ class Creature(object):
 
         self.save_mutant(self.creature_content)
 
-        for mutation in range(mutations):
+        for _ in range(mutations):
             mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
             print('===== new mutant =====')
             print(mutated_content)
@@ -132,6 +145,9 @@ class Creature(object):
 
 
 def setup():
+    """ setup - Set up and prerequisites like the dictionary.
+        :return: None
+    """
     # Make sure we have our spelling list extracted
     txt_name = 'wordsEN.txt'
     if not os.path.exists(txt_name):
@@ -149,6 +165,10 @@ def setup():
 
 
 def spelled_correctly(sentence):
+    """ spelled_correctly - Spell check
+    :param sentence: The sentence to be checked
+    :return: Returns True if all words are correctly spelled
+    """
     with open('wordsEN.txt') as word_file:
         all_words = [x.strip() for x in word_file]
     for word in sentence.split():
@@ -159,26 +179,26 @@ def spelled_correctly(sentence):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("creature",
+    PARSER = argparse.ArgumentParser()
+    PARSER.add_argument("creature",
                         help='Path to the creature to mutate.  Mutated creature will be saved as'
                              ' mutated_<original_name>.py')
-    parser.add_argument("mutations", help="Number of mutations", type=int)
-    parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
-    parser.add_argument("--no-environment", help="Don't use the creature's environment.",
+    PARSER.add_argument("mutations", help="Number of mutations", type=int)
+    PARSER.add_argument("--seed", help="Random seed", type=float, default=time.time())
+    PARSER.add_argument("--no-environment", help="Don't use the creature's environment.",
                         action="store_true")
-    parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
+    PARSER.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
                         action="store_false")
-    args = parser.parse_args()
+    ARGS = PARSER.parse_args()
 
-    print('args: %s' % args)
-    random.seed(args.seed)
-    print('git id: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8'))
+    print('args: %s' % ARGS)
+    random.seed(ARGS.seed)
+    print('git: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8'))
     if subprocess.call(['git', 'diff-index', '--quiet', 'HEAD', '--']) != 0:
         print('git detects uncommitted changes on top of the above id.')
         print('diff:')
         print(subprocess.check_output(['git', 'diff']).strip().decode('utf-8'))
 
     setup()
-    creature = Creature(args.creature)
-    creature.mutate(args.mutations, args.no_environment, args.no_keywords)
+    CREATURE = Creature(ARGS.creature)
+    CREATURE.mutate(ARGS.mutations, ARGS.no_environment, ARGS.no_keywords)
