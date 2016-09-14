@@ -179,6 +179,10 @@ def spelled_correctly(sentence):
 
 
 if __name__ == "__main__":
+    MAJOR = 0
+    MINOR = 0
+    MICRO = 1
+    print('mutate %d.%d.%d' % (MAJOR, MINOR, MICRO))
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument("creature",
                         help='Path to the creature to mutate.  Mutated creature will be saved as'
