@@ -115,7 +115,8 @@ class Creature(object):
 
         self.save_mutant(self.creature_content)
 
-        for _ in range(mutations):
+        for i in range(mutations):
+            print('Iteration: %d' % i)
             mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
             print('===== new mutant =====')
             print(mutated_content)
