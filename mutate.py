@@ -147,38 +147,45 @@ class Creature(object):
         print('Failed mutations: %d' % failed_mutations)
 
 
-def setup():
-    """ setup - Set up and prerequisites like the dictionary.
-        :return: None
-    """
-    # Make sure we have our spelling list extracted
-    txt_name = 'wordsEN.txt'
-    if not os.path.exists(txt_name):
-        zip_name = 'wordsEn.zip'
-        if os.path.exists(zip_name):
-            if zipfile.is_zipfile(zip_name):
-                with zipfile.ZipFile(zip_name) as zip_file:
-                    zip_file.extractall()
+class Dictionary(object):
+    def __init__(self):
+        """ Set up the dictionary.
+            :return: None
+        """
+        # Make sure we have our spelling list extracted
+        txt_name = 'wordsEN.txt'
+        if not os.path.exists(txt_name):
+            zip_name = 'wordsEn.zip'
+            if os.path.exists(zip_name):
+                if zipfile.is_zipfile(zip_name):
+                    with zipfile.ZipFile(zip_name) as zip_file:
+                        zip_file.extractall()
+                else:
+                    print('It appears that %s is not a valid zip file.' % zip_name)
+                    raise Exception('Dictionary zip file invalid.')
             else:
-                print('It appears that %s is not a valid zip file.' % zip_name)
-        else:
-            print('For spell checking, we need %s from'
-                  'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip'
-                  'in the current directory.  Did not find this file.' % zip_name)
+                print('For spell checking, we need %s from'
+                      'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip'
+                      'in the current directory.  Did not find this file.' % zip_name)
+                raise Exception('Dictionary zip file missing.')
+        with open(txt_name) as word_file:
+            self.all_words = [x.strip() for x in word_file]
+
+    def spelled_correctly(self, sentence):
+        """ spelled_correctly - Spell check
+        :param sentence: The sentence to be checked
+        :return: Returns True if all words are correctly spelled
+        """
+        for word in sentence.split():
+            clean_word = word.strip(',. ;:').lower()
+            if clean_word not in self.all_words:
+                return False
+        return True
 
 
-def spelled_correctly(sentence):
-    """ spelled_correctly - Spell check
-    :param sentence: The sentence to be checked
-    :return: Returns True if all words are correctly spelled
-    """
-    with open('wordsEN.txt') as word_file:
-        all_words = [x.strip() for x in word_file]
-    for word in sentence.split():
-        clean_word = word.strip(',. ;:').lower()
-        if clean_word not in all_words:
-            return False
-    return True
+# This particular ugliness (having this as a global) is to make the loading of the dictionary only happen once across
+# all mutations which speeds things up.
+DICTIONARY = Dictionary()
 
 
 if __name__ == "__main__":
@@ -206,6 +213,5 @@ if __name__ == "__main__":
         print('diff:')
         print(subprocess.check_output(['git', 'diff']).strip().decode('utf-8'))
 
-    setup()
     CREATURE = Creature(ARGS.creature)
     CREATURE.mutate(ARGS.mutations, ARGS.no_environment, ARGS.no_keywords)
