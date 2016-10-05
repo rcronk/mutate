@@ -44,6 +44,12 @@ class TestMutate(unittest.TestCase):
                 else:
                     self.assertNotEqual(result, creature)
 
+    def test_spelled_correctly(self):
+        dict = mutate.Dictionary()
+        self.assertTrue(dict.spelled_correctly('hello'))
+        self.assertTrue(dict.spelled_correctly('world'))
+        self.assertFalse(dict.spelled_correctly('rieuerugh'))
+
     def test_pylint(self):
         self.assertEqual(0, subprocess.call(['pylint', 'mutate.py']))
 

@@ -9,6 +9,7 @@ import string
 import subprocess
 import time
 import zipfile
+import sys
 
 
 class Creature(object):
@@ -148,6 +149,7 @@ class Creature(object):
 
 
 class Dictionary(object):
+    """ This is a simple dictionary. """
     def __init__(self):
         """ Set up the dictionary.
             :return: None
@@ -183,35 +185,41 @@ class Dictionary(object):
         return True
 
 
-# This particular ugliness (having this as a global) is to make the loading of the dictionary only happen once across
-# all mutations which speeds things up.
+# This particular ugliness (having this as a global) is to make the loading
+# of the dictionary only happen once across all mutations which speeds things
+# up.
 DICTIONARY = Dictionary()
 
 
-if __name__ == "__main__":
-    MAJOR = 0
-    MINOR = 0
-    MICRO = 2
-    print('mutate %d.%d.%d' % (MAJOR, MINOR, MICRO))
-    PARSER = argparse.ArgumentParser()
-    PARSER.add_argument("creature",
+def main(arguments):
+    """ Entry point for command line. """
+    major = 0
+    minor = 0
+    micro = 2
+    print('mutate %d.%d.%d' % (major, minor, micro))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("creature",
                         help='Path to the creature to mutate.  Mutated creature will be saved as'
                              ' mutated_<original_name>.py')
-    PARSER.add_argument("mutations", help="Number of mutations", type=int)
-    PARSER.add_argument("--seed", help="Random seed", type=float, default=time.time())
-    PARSER.add_argument("--no-environment", help="Don't use the creature's environment.",
+    parser.add_argument("mutations", help="Number of mutations", type=int)
+    parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
+    parser.add_argument("--no-environment", help="Don't use the creature's environment.",
                         action="store_true")
-    PARSER.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
+    parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
                         action="store_false")
-    ARGS = PARSER.parse_args()
+    args = parser.parse_args(arguments)
 
-    print('args: %s' % ARGS)
-    random.seed(ARGS.seed)
+    print('args: %s' % args)
+    random.seed(args.seed)
     print('git: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8'))
     if subprocess.call(['git', 'diff-index', '--quiet', 'HEAD', '--']) != 0:
         print('git detects uncommitted changes on top of the above id.')
         print('diff:')
         print(subprocess.check_output(['git', 'diff']).strip().decode('utf-8'))
 
-    CREATURE = Creature(ARGS.creature)
-    CREATURE.mutate(ARGS.mutations, ARGS.no_environment, ARGS.no_keywords)
+    creature = Creature(args.creature)
+    creature.mutate(args.mutations, args.no_environment, args.no_keywords)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
