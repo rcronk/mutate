@@ -7,7 +7,7 @@ import mutate
 
 class TestEnglish(unittest.TestCase):
     def test_return(self):
-        self.assertTrue(mutate.DICTIONARY.spelled_correctly(mutated_english.QUOTE))
+        self.assertTrue(mutate.Dictionary().spelled_correctly(mutated_english.QUOTE))
         self.assertEqual(0, subprocess.call(['pylint', 'mutated_english.py']))
 
 

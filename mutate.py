@@ -130,8 +130,8 @@ class Creature(object):
                 print('===== succeeded - new creature =====')
                 print(self.creature_content)
                 print('===== succeeded =====')
-                if subprocess.call(['python', cmd]) != 0:
-                    raise Exception('Succeeded creature failed!!!')
+#                if subprocess.call(['python', cmd]) != 0:
+#                    raise Exception('Succeeded creature failed!!!')
             else:
                 failed_mutations += 1
                 print('===== failed - reverting to this =====')
@@ -139,8 +139,8 @@ class Creature(object):
                 print('===== failed =====')
                 self.save_mutant(self.creature_content)
                 print('===== testing reverted creature =====')
-                if subprocess.call(['python', cmd]) != 0:
-                    raise Exception('Reverted creature failed!!!')
+#                if subprocess.call(['python', cmd]) != 0:
+#                    raise Exception('Reverted creature failed!!!')
 
         self.save_mutant(self.creature_content)
 
@@ -183,12 +183,6 @@ class Dictionary(object):
             if clean_word not in self.all_words:
                 return False
         return True
-
-
-# This particular ugliness (having this as a global) is to make the loading
-# of the dictionary only happen once across all mutations which speeds things
-# up.
-DICTIONARY = Dictionary()
 
 
 def main(arguments):
