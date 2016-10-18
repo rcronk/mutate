@@ -15,8 +15,19 @@ class Creature(object):
     """ This is a creature that can duplicate itself with errors. """
     def __init__(self, identity):
         self._identity = identity
-        self._birth = time.time()
-        self._hunger = 0.0
+        self._age = 0
+        self._fuel = 10
+        self._alive = True
+
+    def live(self, ticks):
+        self._age += ticks
+        self._fuel -= ticks
+        if self._age >= 10 or self._fuel <= 0:
+            self.die()
+
+    def die(self):
+        self._alive = False
+        # TODO: rename file to death cause (do we pass cause in or not?)
 
     @property
     def identity(self):
@@ -24,11 +35,11 @@ class Creature(object):
 
     @property
     def age(self):
-        return time.time() - self._birth
+        return self._age
 
     @property
-    def hunger(self):
-        return self._hunger
+    def fuel(self):
+        return self._fuel
 
     @property
     def generation(self):
@@ -39,8 +50,8 @@ class Creature(object):
         return self.age >= 2 and self.age <= 5
 
     @property
-    def passed_on(self):
-        return self.age > 10
+    def alive(self):
+        return self._alive
 
     @staticmethod
     def _weighted_choice(choices):
