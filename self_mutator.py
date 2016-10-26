@@ -10,7 +10,7 @@ import subprocess
 import time
 import sys
 
-# TODO: We should be in a live() loop that sleeps 1, then does checks and actions based on age and hunger
+
 class Creature(object):
     """ This is a creature that can duplicate itself with errors. """
     def __init__(self, identity):
@@ -19,15 +19,23 @@ class Creature(object):
         self._fuel = 10
         self._alive = True
 
-    def live(self, ticks):
-        self._age += ticks
-        self._fuel -= ticks
-        if self._age >= 10 or self._fuel <= 0:
-            self.die()
+    def live(self, time):
+        self._age += time
+        self._fuel -= time
+        if self._age >= 10:
+            self.die('old_age')
+        elif self._fuel <= 0:
+            self.die('hunger')
 
-    def die(self):
+    def die(self, reason):
         self._alive = False
-        # TODO: rename file to death cause (do we pass cause in or not?)
+        os.rename(self.filename, '%s.%s' % (self.filename, reason))
+        print('dying because of %s' % reason)
+        sys.exit(0)
+
+    @property
+    def filename(self):
+        return __file__
 
     @property
     def identity(self):

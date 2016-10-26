@@ -1,12 +1,12 @@
 import unittest
 import subprocess
-import time
+import os
 
 import self_mutator
 
 
 class TestEnglish(unittest.TestCase):
-    def test_stuff(self):
+    def test_basic_lifetime(self):
         identity = '1'
         creature = self_mutator.Creature(identity)
         self.assertAlmostEqual(0.0, creature.age, delta=0.1)
@@ -18,9 +18,14 @@ class TestEnglish(unittest.TestCase):
         creature.live(1)
         self.assertAlmostEqual(1.0, creature.age, delta=0.1)
         self.assertEqual(9, creature.fuel)
-        creature.live(9)
+        creature.live(9)  # Warning: This renames the source file.
         self.assertEqual(0, creature.fuel)
         self.assertFalse(creature.alive)
+
+    def test_filename(self):
+        identity = '1'
+        creature = self_mutator.Creature(identity)
+        self.assertEqual('self_mutator.py', os.path.basename(creature.filename))
 
 #    def test_pylint(self):
 #        self.assertFalse(subprocess.call(['pylint', 'self_mutator.py']))
