@@ -5,7 +5,7 @@ import os
 import self_mutator
 
 
-class TestEnglish(unittest.TestCase):
+class TestSelfMutator(unittest.TestCase):
     def test_basic_lifetime(self):
         identity = '1'
         creature = self_mutator.Creature(identity)
