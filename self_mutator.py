@@ -55,7 +55,7 @@ class Creature(object):
 
     @property
     def can_reproduce(self):
-        return self.age >= 2 and self.age <= 5
+        return 2 <= self.age <= 5
 
     @property
     def alive(self):
