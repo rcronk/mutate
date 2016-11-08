@@ -18,7 +18,7 @@ class TestSelfMutator(unittest.TestCase):
         creature.live(1)
         self.assertAlmostEqual(1.0, creature.age, delta=0.1)
         self.assertEqual(9, creature.fuel)
-        creature.live(9)  # Warning: This renames the source file.
+        creature.live(9)
         self.assertEqual(0, creature.fuel)
         self.assertFalse(creature.alive)
 

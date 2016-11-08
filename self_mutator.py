@@ -29,9 +29,9 @@ class Creature(object):
 
     def die(self, reason):
         self._alive = False
-        os.rename(self.filename, '%s.%s' % (self.filename, reason))
         print('dying because of %s' % reason)
-        sys.exit(0)
+        # Communicate with mutate.py here
+        # sys.exit(0)
 
     @property
     def filename(self):
