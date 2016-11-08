@@ -15,16 +15,16 @@ class Creature(object):
     """ This is a creature that can duplicate itself with errors. """
     def __init__(self, identity):
         self._identity = identity
-        self._age = 0
-        self._fuel = 10
+        self._age = 0.0
+        self._fuel = 10.0
         self._alive = True
 
     def live(self, time):
         self._age += time
         self._fuel -= time
-        if self._age >= 10:
+        if self._age >= 10.0:
             self.die('old_age')
-        elif self._fuel <= 0:
+        elif self._fuel <= 0.0:
             self.die('hunger')
 
     def die(self, reason):
@@ -55,7 +55,7 @@ class Creature(object):
 
     @property
     def can_reproduce(self):
-        return 2 <= self.age <= 5
+        return 2.0 <= self.age <= 5.0
 
     @property
     def alive(self):
