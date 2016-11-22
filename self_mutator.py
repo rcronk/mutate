@@ -19,13 +19,20 @@ class Creature(object):
         self._fuel = 10.0
         self._alive = True
 
-    def live(self, time):
-        self._age += time
-        self._fuel -= time
-        if self._age >= 10.0:
-            self.die('old_age')
-        elif self._fuel <= 0.0:
-            self.die('hunger')
+    def live(self, time_to_live):
+        for year in range(time_to_live):
+            self._age += 1
+            self._fuel -= 1
+            if self._age >= 10.0:
+                self.die('old_age')
+            elif self._fuel <= 0.0:
+                self.die('hunger')
+            elif self.can_reproduce:
+                if random.random() > 0.6:
+                    print('Will reproduce here.')
+            elif self.is_hungry:
+                # try to eat, maybe get food, maybe not
+                pass
 
     def die(self, reason):
         self._alive = False
@@ -56,6 +63,10 @@ class Creature(object):
     @property
     def can_reproduce(self):
         return 2.0 <= self.age <= 5.0
+
+    @property
+    def is_hungry(self):
+        return self.fuel < 5
 
     @property
     def alive(self):
