@@ -11,34 +11,50 @@ import time
 import sys
 
 
-class Creature(object):
+class SelfReplicatingCreature(object):
     """ This is a creature that can duplicate itself with errors. """
+    maximum_age = 100               # Die of old age
+    start_reproducing = 20      # Can reproduce starting at this age
+    stop_reproducing = 40       # Stop reproducing at this age
+    reproduction_chance = 0.25  # Each year, we have this chance to have offspring
+    minimum_energy = 0          # If our energy gets below this, we die
+    hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
+    maximum_energy = 10         # If our energy is at this level, we cannot eat more, this is what we start with
+
     def __init__(self, identity):
         self._identity = identity
-        self._age = 0.0
-        self._energy = 10.0
+        self._age = 0
+        self._energy = SelfReplicatingCreature.maximum_energy
         self._alive = True
 
     def live(self, time_to_live):
         for year in range(time_to_live):
-            self._age += 1
-            self._energy -= 1
-            if self._age >= 10.0:
-                self.die('old_age')
-            elif self._energy <= 0.0:
-                self.die('hunger')
-            elif self.can_reproduce:
-                if random.random() > 0.6:
-                    print('Will reproduce here.')
-            elif self.is_hungry:
-                # try to eat, maybe get food, maybe not
-                pass
+            print('I am %d years old.' % self._age)
+            if self.alive:
+                self._age += 1
+                self._energy -= 1
+                if self._age >= SelfReplicatingCreature.maximum_age:
+                    self.die('old_age')
+                elif self._energy <= SelfReplicatingCreature.minimum_energy:
+                    self.die('hunger')
+                elif self.is_hungry:
+                    print('I am hungry: %d' % self.energy)
+                    self.eat()
+                elif self.can_reproduce:  # If hungry, won't reproduce
+                    if random.random() > SelfReplicatingCreature.reproduction_chance:
+                        print('I will reproduce here.')
+                elif self.is_hungry:
+                    # try to eat, maybe get food, maybe not
+                    pass
+            else:
+                print('I am dead.')
+                return
 
     def die(self, reason):
         self._alive = False
         print('dying because of %s' % reason)
         # Communicate with mutate.py here
-        # sys.exit(0)
+        # sys.exit(0) # if not in a unit test
 
     @property
     def filename(self):
@@ -56,17 +72,26 @@ class Creature(object):
     def energy(self):
         return self._energy
 
+    @energy.setter
+    def energy(self, value):
+        self._energy = value
+
     @property
     def generation(self):
         return len(self._identity.split('.'))
 
     @property
     def can_reproduce(self):
-        return 2.0 <= self.age <= 5.0
+        return SelfReplicatingCreature.start_reproducing <= self.age <= SelfReplicatingCreature.stop_reproducing
 
     @property
     def is_hungry(self):
-        return self.energy < 5
+        return self.energy < SelfReplicatingCreature.hunger_energy
+
+    def eat(self):
+        # Later on, we'll get food from a shared scarce resource, this is just a stub
+        if random.random() > 0.5:
+            self.energy += 3
 
     @property
     def alive(self):
@@ -96,10 +121,10 @@ class Creature(object):
         if mutation_weights is None:
             mutation_weights = {'prepend':25, 'overwrite':25, 'insert':25, 'append':25}
 
-        defect = Creature._weighted_choice([('prepend', mutation_weights['prepend']),
-                                            ('overwrite', mutation_weights['overwrite']),
-                                            ('insert', mutation_weights['insert']),
-                                            ('append', mutation_weights['append'])])
+        defect = SelfReplicatingCreature._weighted_choice([('prepend', mutation_weights['prepend']),
+                                                           ('overwrite', mutation_weights['overwrite']),
+                                                           ('insert', mutation_weights['insert']),
+                                                           ('append', mutation_weights['append'])])
 
         if use_keywords:
             python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ',
@@ -197,26 +222,17 @@ def main(arguments):
     major = 0
     minor = 0
     micro = 2
-    print('mutate %d.%d.%d' % (major, minor, micro))
+    print('self_mutator %d.%d.%d' % (major, minor, micro))
     parser = argparse.ArgumentParser()
-    parser.add_argument("mutations", help="Number of mutations", type=int)
+    parser.add_argument("id", help="Unique identifier for this creature (x.y.z...)", type=str)
     parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
-    parser.add_argument("--no-environment", help="Don't use the creature's environment.",
-                        action="store_true")
-    parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
-                        action="store_false")
     args = parser.parse_args(arguments)
 
     print('args: %s' % args)
     random.seed(args.seed)
-    print('git: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8'))
-    if subprocess.call(['git', 'diff-index', '--quiet', 'HEAD', '--']) != 0:
-        print('git detects uncommitted changes on top of the above id.')
-        print('diff:')
-        print(subprocess.check_output(['git', 'diff']).strip().decode('utf-8'))
 
-    creature = Creature(args.creature)
-    creature.mutate(args.mutations, args.no_environment, args.no_keywords)
+    creature = SelfReplicatingCreature(args.id)
+    creature.live(SelfReplicatingCreature.maximum_age)
 
 
 if __name__ == "__main__":
