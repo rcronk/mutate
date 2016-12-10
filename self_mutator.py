@@ -16,16 +16,16 @@ class Creature(object):
     def __init__(self, identity):
         self._identity = identity
         self._age = 0.0
-        self._fuel = 10.0
+        self._energy = 10.0
         self._alive = True
 
     def live(self, time_to_live):
         for year in range(time_to_live):
             self._age += 1
-            self._fuel -= 1
+            self._energy -= 1
             if self._age >= 10.0:
                 self.die('old_age')
-            elif self._fuel <= 0.0:
+            elif self._energy <= 0.0:
                 self.die('hunger')
             elif self.can_reproduce:
                 if random.random() > 0.6:
@@ -53,8 +53,8 @@ class Creature(object):
         return self._age
 
     @property
-    def fuel(self):
-        return self._fuel
+    def energy(self):
+        return self._energy
 
     @property
     def generation(self):
@@ -66,7 +66,7 @@ class Creature(object):
 
     @property
     def is_hungry(self):
-        return self.fuel < 5
+        return self.energy < 5
 
     @property
     def alive(self):

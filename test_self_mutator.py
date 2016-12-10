@@ -10,16 +10,16 @@ class TestSelfMutator(unittest.TestCase):
         identity = '1'
         creature = self_mutator.Creature(identity)
         self.assertAlmostEqual(0.0, creature.age, delta=0.1)
-        self.assertAlmostEqual(10.0, creature.fuel, delta=0.1)
+        self.assertAlmostEqual(10.0, creature.energy, delta=0.1)
         self.assertEqual(identity, creature._identity)
         self.assertEqual(1, creature.generation)
         self.assertFalse(creature.can_reproduce)
         self.assertTrue(creature.alive)
         creature.live(1)
         self.assertAlmostEqual(1.0, creature.age, delta=0.1)
-        self.assertEqual(9, creature.fuel)
+        self.assertEqual(9, creature.energy)
         creature.live(9)
-        self.assertEqual(0, creature.fuel)
+        self.assertEqual(0, creature.energy)
         self.assertFalse(creature.alive)
 
     def test_filename(self):
