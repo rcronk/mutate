@@ -29,10 +29,10 @@ class SelfReplicatingCreature(object):
 
     def live(self, time_to_live):
         for year in range(time_to_live):
-            print('I am %d years old.' % self._age)
             if self.alive:
                 self._age += 1
                 self._energy -= 1
+                print('I am %d years old.' % self._age)
                 if self._age >= SelfReplicatingCreature.maximum_age:
                     self.die('old_age')
                 elif self._energy <= SelfReplicatingCreature.minimum_energy:
