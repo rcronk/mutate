@@ -43,6 +43,9 @@ class SelfReplicatingCreature(object):
                 elif self.can_reproduce:  # If hungry, won't reproduce
                     if random.random() > SelfReplicatingCreature.reproduction_chance:
                         print('I will reproduce here.')
+                        # Make the flawed copy here
+                        # Run pylint against the copy before spawning it (or do we just let it spawn?)
+                        # Spawn the flawed copy here
                 elif self.is_hungry:
                     # try to eat, maybe get food, maybe not
                     pass
