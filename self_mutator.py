@@ -45,7 +45,7 @@ class SelfReplicator(object):
                 elif self.is_hungry:
                     print('I am hungry: %d' % self.energy)
                     self.eat()
-                elif self.can_reproduce:  # If hungry, won't reproduce
+                elif self.can_reproduce:
                     if random.random() > SelfReplicator.reproduction_chance:
                         self.reproduce()
                 elif self.is_hungry:
@@ -62,6 +62,7 @@ class SelfReplicator(object):
         child = open(child_name, 'w')
         with open(__file__) as original:
             data = original.read(1)
+            # Mess with the data here - should be about once per file copy
             child.write(data)
         self.offspring_count += 1
         # Make the flawed copy here
@@ -126,7 +127,9 @@ class SelfReplicator(object):
         """
         :return: True if we can reproduce right now
         """
-        return SelfReplicator.start_reproducing <= self.age <= SelfReplicator.stop_reproducing
+        can_reproduce = SelfReplicator.start_reproducing <= self.age <= SelfReplicator.stop_reproducing
+        can_reproduce = can_reproduce and not self.is_hungry
+        return can_reproduce
 
     @property
     def is_hungry(self):
