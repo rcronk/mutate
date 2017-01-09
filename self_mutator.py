@@ -1,4 +1,4 @@
-""" mutate.py - a mutation algorithm. """
+""" self_mutator.py - a mutation algorithm. """
 
 from __future__ import print_function
 
@@ -6,7 +6,6 @@ import argparse
 import os
 import random
 import string
-import subprocess
 import time
 import sys
 
@@ -56,14 +55,15 @@ class SelfReplicator(object):
                 return
 
     def reproduce(self):
-        print('I will reproduce here.')
+        """ Copies this to a child with flawed copy
+        :return: None
+        """
         our_basename, our_extension = os.path.splitext(__file__)
         child_name = '%s.%d%s' % (our_basename, self.offspring_count, our_extension)
+        print('Reproducing to %s...' % child_name)
         child = open(child_name, 'w')
         with open(__file__) as original:
-            data = original.read(1)
-            # Mess with the data here - should be about once per file copy
-            child.write(data)
+            child.write(self._flawed_copy(original.read()))
         self.offspring_count += 1
         # Make the flawed copy here
         # Run pylint against the copy before spawning it (or just let it spawn?)
@@ -76,7 +76,7 @@ class SelfReplicator(object):
         """
         self._alive = False
         print('dying because of %s' % reason)
-        # Communicate with mutate.py here
+        # Communicate with child.py here?
         # sys.exit(0) # if not in a unit test
 
     @property
@@ -127,9 +127,9 @@ class SelfReplicator(object):
         """
         :return: True if we can reproduce right now
         """
-        can_reproduce = SelfReplicator.start_reproducing <= self.age <= SelfReplicator.stop_reproducing
-        can_reproduce = can_reproduce and not self.is_hungry
-        return can_reproduce
+        can = SelfReplicator.start_reproducing <= self.age <= SelfReplicator.stop_reproducing
+        can = can and not self.is_hungry
+        return can
 
     @property
     def is_hungry(self):
@@ -175,11 +175,12 @@ class SelfReplicator(object):
             source : list of characters
         """
         if mutation_weights is None:
-            mutation_weights = {'prepend':25, 'overwrite':25, 'insert':25, 'append':25}
+            mutation_weights = {'prepend':20, 'overwrite':20, 'insert':20, 'delete':20, 'append':20}
 
         defect = SelfReplicator._weighted_choice([('prepend', mutation_weights['prepend']),
                                                   ('overwrite', mutation_weights['overwrite']),
                                                   ('insert', mutation_weights['insert']),
+                                                  ('delete', mutation_weights['delete']),
                                                   ('append', mutation_weights['append'])])
 
         if use_keywords:
@@ -203,56 +204,19 @@ class SelfReplicator(object):
                 source = mutation + source
             elif defect == 'append':
                 source = source + mutation
-            elif defect in ('overwrite', 'insert'):
+            elif defect in ('overwrite', 'insert', 'delete'):
                 mutation_location = random.randint(0, len(source) - 1)
                 if defect == 'overwrite':
                     source = source[:mutation_location] + mutation + source[mutation_location + 1:]
-                else:
+                elif defect == 'insert':
                     source = source[:mutation_location] + mutation + source[mutation_location:]
+                elif defect == 'delete':
+                    source = source[:mutation_location] + source[mutation_location + 1:]
+                else:
+                    raise Exception('Unsupported defect type: %s' % defect)
             else:
                 raise 'Invalid defect: %s' % defect
         return source
-
-    def mutate(self, mutations, use_keywords):
-        """ mutate - mutates something mutations times
-        :param mutations: times to mutate
-        :param no_environment: Skip unit tests even if present
-        :param use_keywords: Use python keywords as mutations or not
-        :return: None
-        """
-        successful_mutations = 0
-        failed_mutations = 0
-
-        cmd = self.filename
-
-#        self.save_mutant(self.creature_content)
-
-        for i in range(mutations):
-            print('Iteration: %d' % i)
-#            mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
-            print('===== new mutant =====')
-            print(mutated_content)
-            print('===== new =====')
-#            self.save_mutant(mutated_content)
-
-            if subprocess.call(['python', cmd]) == 0:
-                successful_mutations += 1
-#                self.creature_content = mutated_content
-                print('===== succeeded - new creature =====')
-                print(self.creature_content)
-                print('===== succeeded =====')
-            else:
-                failed_mutations += 1
-                print('===== failed - reverting to this =====')
-                print(self.creature_content)
-                print('===== failed =====')
-                self.save_mutant(self.creature_content)
-                print('===== testing reverted creature =====')
-
-        self.save_mutant(self.creature_content)
-
-        print('Successful mutations: %d' % successful_mutations)
-        print('Failed mutations: %d' % failed_mutations)
 
 
 def main(arguments):

@@ -29,6 +29,20 @@ class TestSelfMutator(unittest.TestCase):
     def test_main(self):
         self_mutator.main(['1.2.3.4', '--seed', '13'])
 
+    def test_flawed_copy(self):
+        for i in range(1000):
+            creature = 'abcdefg'
+            result = self_mutator.SelfReplicator._flawed_copy(creature)
+            if len(result) == len(creature): # overwrite
+                pass # an overwrite is usually different, but rarely the same so we can't test
+            elif len(result) == len(creature) - 1: # delete
+                pass # We deleted something, but we don't know what it was without some inspection
+            else:
+                if result[:-1] == creature or result[1:] == creature:
+                    self.assertNotEqual(result, creature)
+                else:
+                    self.assertNotEqual(result, creature)
+
     def test_pylint(self):
         self.assertFalse(subprocess.call(['pylint', 'self_mutator.py']))
 
