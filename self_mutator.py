@@ -57,7 +57,8 @@ class SelfReplicator(object):
 
     def reproduce(self):
         print('I will reproduce here.')
-        child_name = os.path.basename(__file__)
+        our_basename, our_extension = os.path.splitext(__file__)
+        child_name = '%s.%d%s' % (our_basename, self.offspring_count, our_extension)
         child = open(child_name, 'w')
         with open(__file__) as original:
             data = original.read(1)
