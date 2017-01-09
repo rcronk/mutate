@@ -11,7 +11,7 @@ import time
 import sys
 
 
-class SelfReplicatingCreature(object):
+class SelfReplicator(object):
     """ This is a creature that can duplicate itself with errors. """
     maximum_age = 100               # Die of old age
     start_reproducing = 20      # Can reproduce starting at this age
@@ -19,33 +19,35 @@ class SelfReplicatingCreature(object):
     reproduction_chance = 0.25  # Each year, we have this chance to have offspring
     minimum_energy = 0          # If our energy gets below this, we die
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
-    maximum_energy = 10         # If our energy is at this level, we cannot eat more, this is what we start with
+    maximum_energy = 10         # If our energy is at this level, we cannot eat more
 
     def __init__(self, identity):
         self._identity = identity
         self._age = 0
-        self._energy = SelfReplicatingCreature.maximum_energy
+        self._energy = SelfReplicator.maximum_energy
         self._alive = True
+        self.offspring_count = 0
 
     def live(self, time_to_live):
-        for year in range(time_to_live):
+        """
+        :param time_to_live: The number of units of time to live for.
+        :return: None
+        """
+        for _ in range(time_to_live):
             if self.alive:
                 self._age += 1
                 self._energy -= 1
                 print('I am %d years old.' % self._age)
-                if self._age >= SelfReplicatingCreature.maximum_age:
+                if self._age >= SelfReplicator.maximum_age:
                     self.die('old_age')
-                elif self._energy <= SelfReplicatingCreature.minimum_energy:
+                elif self._energy <= SelfReplicator.minimum_energy:
                     self.die('hunger')
                 elif self.is_hungry:
                     print('I am hungry: %d' % self.energy)
                     self.eat()
                 elif self.can_reproduce:  # If hungry, won't reproduce
-                    if random.random() > SelfReplicatingCreature.reproduction_chance:
-                        print('I will reproduce here.')
-                        # Make the flawed copy here
-                        # Run pylint against the copy before spawning it (or do we just let it spawn?)
-                        # Spawn the flawed copy here
+                    if random.random() > SelfReplicator.reproduction_chance:
+                        self.reproduce()
                 elif self.is_hungry:
                     # try to eat, maybe get food, maybe not
                     pass
@@ -53,7 +55,23 @@ class SelfReplicatingCreature(object):
                 print('I am dead.')
                 return
 
+    def reproduce(self):
+        print('I will reproduce here.')
+        child_name = os.path.basename(__file__)
+        child = open(child_name, 'w')
+        with open(__file__) as original:
+            data = original.read(1)
+            child.write(data)
+        self.offspring_count += 1
+        # Make the flawed copy here
+        # Run pylint against the copy before spawning it (or just let it spawn?)
+        # Spawn the flawed copy here
+
     def die(self, reason):
+        """
+        :param reason: The reason for the death (hunger, old age)
+        :return: None
+        """
         self._alive = False
         print('dying because of %s' % reason)
         # Communicate with mutate.py here
@@ -61,43 +79,74 @@ class SelfReplicatingCreature(object):
 
     @property
     def filename(self):
+        """
+        :return: The filename of this creature
+        """
         return __file__
 
     @property
     def identity(self):
+        """
+        :return: UUID of this creature
+        """
         return self._identity
 
     @property
     def age(self):
+        """
+        :return: Age of creature
+        """
         return self._age
 
     @property
     def energy(self):
+        """
+        :return: Energy (amount of food in stomach, hunger)
+        """
         return self._energy
 
     @energy.setter
     def energy(self, value):
+        """
+        :param value: Set the energy to this value
+        :return: None
+        """
         self._energy = value
 
     @property
     def generation(self):
+        """
+        :return: How many generations since first creature
+        """
         return len(self._identity.split('.'))
 
     @property
     def can_reproduce(self):
-        return SelfReplicatingCreature.start_reproducing <= self.age <= SelfReplicatingCreature.stop_reproducing
+        """
+        :return: True if we can reproduce right now
+        """
+        return SelfReplicator.start_reproducing <= self.age <= SelfReplicator.stop_reproducing
 
     @property
     def is_hungry(self):
-        return self.energy < SelfReplicatingCreature.hunger_energy
+        """
+        :return: True if hungry (energy is low)
+        """
+        return self.energy < SelfReplicator.hunger_energy
 
     def eat(self):
+        """
+        :return: Causes creature to eat, increasig energy, reducing shared food supply
+        """
         # Later on, we'll get food from a shared scarce resource, this is just a stub
         if random.random() > 0.5:
             self.energy += 3
 
     @property
     def alive(self):
+        """
+        :return: True if alive
+        """
         return self._alive
 
     @staticmethod
@@ -124,10 +173,10 @@ class SelfReplicatingCreature(object):
         if mutation_weights is None:
             mutation_weights = {'prepend':25, 'overwrite':25, 'insert':25, 'append':25}
 
-        defect = SelfReplicatingCreature._weighted_choice([('prepend', mutation_weights['prepend']),
-                                                           ('overwrite', mutation_weights['overwrite']),
-                                                           ('insert', mutation_weights['insert']),
-                                                           ('append', mutation_weights['append'])])
+        defect = SelfReplicator._weighted_choice([('prepend', mutation_weights['prepend']),
+                                                  ('overwrite', mutation_weights['overwrite']),
+                                                  ('insert', mutation_weights['insert']),
+                                                  ('append', mutation_weights['append'])])
 
         if use_keywords:
             python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ',
@@ -160,19 +209,7 @@ class SelfReplicatingCreature(object):
                 raise 'Invalid defect: %s' % defect
         return source
 
-    def save_mutant(self, creature_content):
-        """ save_mutant: Saves new mutant content to file.
-        :param creature_content: Text of file to be saved.
-        :return: None
-        """
-        mutant_path_handle = open(self.mutant_path, 'w')
-        mutant_path_handle.write(creature_content)
-        mutant_path_handle.close()
-        pyc_file = '__pycache__\\%s.cpython-35.pyc' % os.path.splitext(self.mutant_path)[0]
-        if os.path.exists(pyc_file):
-            os.unlink(pyc_file)
-
-    def mutate(self, mutations, no_environment, use_keywords):
+    def mutate(self, mutations, use_keywords):
         """ mutate - mutates something mutations times
         :param mutations: times to mutate
         :param no_environment: Skip unit tests even if present
@@ -182,27 +219,21 @@ class SelfReplicatingCreature(object):
         successful_mutations = 0
         failed_mutations = 0
 
-        if not os.path.exists(self.test_path):
-            no_environment = True
+        cmd = self.filename
 
-        if no_environment:
-            cmd = self.mutant_path
-        else:
-            cmd = self.test_path
-
-        self.save_mutant(self.creature_content)
+#        self.save_mutant(self.creature_content)
 
         for i in range(mutations):
             print('Iteration: %d' % i)
-            mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
+#            mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
             print('===== new mutant =====')
             print(mutated_content)
             print('===== new =====')
-            self.save_mutant(mutated_content)
+#            self.save_mutant(mutated_content)
 
             if subprocess.call(['python', cmd]) == 0:
                 successful_mutations += 1
-                self.creature_content = mutated_content
+#                self.creature_content = mutated_content
                 print('===== succeeded - new creature =====')
                 print(self.creature_content)
                 print('===== succeeded =====')
@@ -234,8 +265,8 @@ def main(arguments):
     print('args: %s' % args)
     random.seed(args.seed)
 
-    creature = SelfReplicatingCreature(args.id)
-    creature.live(SelfReplicatingCreature.maximum_age)
+    creature = SelfReplicator(args.id)
+    creature.live(SelfReplicator.maximum_age)
 
 
 if __name__ == "__main__":
