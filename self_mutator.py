@@ -6,11 +6,14 @@ import argparse
 import os
 import random
 import string
+import subprocess
 import time
 import sys
 
+import logging
 
-class SelfReplicator(object):
+
+class SelfMutator(object):
     """ This is a creature that can duplicate itself with errors. """
     maximum_age = 100               # Die of old age
     start_reproducing = 20      # Can reproduce starting at this age
@@ -20,10 +23,13 @@ class SelfReplicator(object):
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
     maximum_energy = 10         # If our energy is at this level, we cannot eat more
 
-    def __init__(self, identity):
+    def __init__(self, identity, max_gen_depth):
         self._identity = identity
+        self.max_gen_depth = max_gen_depth
+        if self.generation > self.max_gen_depth:
+            raise Exception('Exiting: beyond max generation depth...')
         self._age = 0
-        self._energy = SelfReplicator.maximum_energy
+        self._energy = SelfMutator.maximum_energy
         self._alive = True
         self.offspring_count = 0
 
@@ -34,24 +40,25 @@ class SelfReplicator(object):
         """
         for _ in range(time_to_live):
             if self.alive:
+                time.sleep(1)
                 self._age += 1
                 self._energy -= 1
-                print('I am %d years old.' % self._age)
-                if self._age >= SelfReplicator.maximum_age:
+                logging.info('I am %d years old.', self._age)
+                if self._age >= SelfMutator.maximum_age:
                     self.die('old_age')
-                elif self._energy <= SelfReplicator.minimum_energy:
+                elif self._energy <= SelfMutator.minimum_energy:
                     self.die('hunger')
                 elif self.is_hungry:
-                    print('I am hungry: %d' % self.energy)
+                    logging.warning('I am hungry: %d', self.energy)
                     self.eat()
                 elif self.can_reproduce:
-                    if random.random() > SelfReplicator.reproduction_chance:
+                    if random.random() > SelfMutator.reproduction_chance:
                         self.reproduce()
                 elif self.is_hungry:
                     # try to eat, maybe get food, maybe not
                     pass
             else:
-                print('I am dead.')
+                logging.error('I am dead.')
                 return
 
     def reproduce(self):
@@ -60,14 +67,16 @@ class SelfReplicator(object):
         """
         our_basename, our_extension = os.path.splitext(__file__)
         child_name = '%s.%d%s' % (our_basename, self.offspring_count, our_extension)
-        print('Reproducing to %s...' % child_name)
+        logging.info('Reproducing to %s...', child_name)
         child = open(child_name, 'w')
         with open(__file__) as original:
             child.write(self._flawed_copy(original.read()))
+        child.close()
         self.offspring_count += 1
-        # Make the flawed copy here
-        # Run pylint against the copy before spawning it (or just let it spawn?)
-        # Spawn the flawed copy here
+        detached_process = 0x00000008 # Windows only?
+        logging.warning('executing child')
+        subprocess.Popen(['python', child_name, '--seed', '100', '--maxgen', '3', self.identity], close_fds=True,
+                         creationflags=detached_process)
 
     def die(self, reason):
         """
@@ -75,7 +84,7 @@ class SelfReplicator(object):
         :return: None
         """
         self._alive = False
-        print('dying because of %s' % reason)
+        logging.error('dying because of %s', reason)
         # Communicate with child.py here?
         # sys.exit(0) # if not in a unit test
 
@@ -127,7 +136,7 @@ class SelfReplicator(object):
         """
         :return: True if we can reproduce right now
         """
-        can = SelfReplicator.start_reproducing <= self.age <= SelfReplicator.stop_reproducing
+        can = SelfMutator.start_reproducing <= self.age <= SelfMutator.stop_reproducing
         can = can and not self.is_hungry
         return can
 
@@ -136,7 +145,7 @@ class SelfReplicator(object):
         """
         :return: True if hungry (energy is low)
         """
-        return self.energy < SelfReplicator.hunger_energy
+        return self.energy < SelfMutator.hunger_energy
 
     def eat(self):
         """
@@ -177,11 +186,11 @@ class SelfReplicator(object):
         if mutation_weights is None:
             mutation_weights = {'prepend':20, 'overwrite':20, 'insert':20, 'delete':20, 'append':20}
 
-        defect = SelfReplicator._weighted_choice([('prepend', mutation_weights['prepend']),
-                                                  ('overwrite', mutation_weights['overwrite']),
-                                                  ('insert', mutation_weights['insert']),
-                                                  ('delete', mutation_weights['delete']),
-                                                  ('append', mutation_weights['append'])])
+        defect = SelfMutator._weighted_choice([('prepend', mutation_weights['prepend']),
+                                               ('overwrite', mutation_weights['overwrite']),
+                                               ('insert', mutation_weights['insert']),
+                                               ('delete', mutation_weights['delete']),
+                                               ('append', mutation_weights['append'])])
 
         if use_keywords:
             python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ',
@@ -219,23 +228,41 @@ class SelfReplicator(object):
         return source
 
 
+def setup_logging():
+    """
+    Set up logging
+    :return: None
+    """
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(filename)s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M')
+#    logger = logging.getLogger('log')
+#    logger.setLevel(logging.INFO)
+#    ch = logging.StreamHandler()
+#    ch.setLevel(logging.INFO)
+#    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#    ch.setFormatter(formatter)
+#    logger.addHandler(ch)
+
 def main(arguments):
     """ Entry point for command line. """
     major = 0
     minor = 0
-    micro = 2
-    print('self_mutator %d.%d.%d' % (major, minor, micro))
+    micro = 3
+    logging.info('self_mutator %d.%d.%d', major, minor, micro)
     parser = argparse.ArgumentParser()
     parser.add_argument("id", help="Unique identifier for this creature (x.y.z...)", type=str)
     parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
+    parser.add_argument("--maxgen", help="Maximum generations", type=int, default=3)
     args = parser.parse_args(arguments)
 
-    print('args: %s' % args)
+    logging.info('args: %s', args)
     random.seed(args.seed)
 
-    creature = SelfReplicator(args.id)
-    creature.live(SelfReplicator.maximum_age)
+    creature = SelfMutator(args.id, args.maxgen)
+    creature.live(SelfMutator.maximum_age)
 
 
 if __name__ == "__main__":
+    setup_logging()
     main(sys.argv[1:])
