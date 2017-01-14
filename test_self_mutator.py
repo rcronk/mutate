@@ -1,12 +1,16 @@
 import unittest
 import os
 import subprocess
+import logging
 
 import self_mutator
 
 
 class TestSelfMutator(unittest.TestCase):
     def test_basic_lifetime(self):
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s %(filename)s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M:%S')
         identity = '1'
         creature = self_mutator.SelfMutator(identity, 5)
         self.assertEqual(0, creature.age)

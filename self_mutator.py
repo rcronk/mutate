@@ -26,11 +26,13 @@ class SelfMutator(object):
     def __init__(self, identity, max_gen_depth):
         self._identity = identity
         self.max_gen_depth = max_gen_depth
+        logging.debug('max_depth: %d, current_gen_depth: %d', max_gen_depth, self.generation)
         if self.generation > self.max_gen_depth:
             raise Exception('Exiting: beyond max generation depth...')
         self._age = 0
         self._energy = SelfMutator.maximum_energy
         self._alive = True
+        self._should_reproduce = False
         self.offspring_count = 0
 
     def live(self, time_to_live):
@@ -43,13 +45,13 @@ class SelfMutator(object):
                 time.sleep(1)
                 self._age += 1
                 self._energy -= 1
-                logging.info('I am %d years old.', self._age)
+                logging.debug('I am %d years old.', self._age)
                 if self._age >= SelfMutator.maximum_age:
                     self.die('old_age')
                 elif self._energy <= SelfMutator.minimum_energy:
                     self.die('hunger')
                 elif self.is_hungry:
-                    logging.warning('I am hungry: %d', self.energy)
+                    logging.debug('I am hungry: %d', self.energy)
                     self.eat()
                 elif self.can_reproduce:
                     if random.random() > SelfMutator.reproduction_chance:
@@ -57,9 +59,6 @@ class SelfMutator(object):
                 elif self.is_hungry:
                     # try to eat, maybe get food, maybe not
                     pass
-            else:
-                logging.error('I am dead.')
-                return
 
     def reproduce(self):
         """ Copies this to a child with flawed copy
@@ -68,15 +67,16 @@ class SelfMutator(object):
         our_basename, our_extension = os.path.splitext(__file__)
         child_name = '%s.%d%s' % (our_basename, self.offspring_count, our_extension)
         logging.info('Reproducing to %s...', child_name)
-        child = open(child_name, 'w')
-        with open(__file__) as original:
-            child.write(self._flawed_copy(original.read()))
-        child.close()
-        self.offspring_count += 1
-        detached_process = 0x00000008 # Windows only?
-        logging.warning('executing child')
-        subprocess.Popen(['python', child_name, '--seed', '100', '--maxgen', '3', self.identity], close_fds=True,
-                         creationflags=detached_process)
+        if self._should_reproduce:
+            child = open(child_name, 'w')
+            with open(__file__) as original:
+                child.write(self._flawed_copy(original.read()))
+            child.close()
+            self.offspring_count += 1
+            detached_process = 0x00000008 # Windows only?
+            logging.info('executing child')
+            subprocess.Popen(['python', child_name, '--seed', '100', '--maxgen', '3',
+                              self.identity], close_fds=True, creationflags=detached_process)
 
     def die(self, reason):
         """
@@ -149,7 +149,7 @@ class SelfMutator(object):
 
     def eat(self):
         """
-        :return: Causes creature to eat, increasig energy, reducing shared food supply
+        :return: Causes creature to eat, increasing energy, reducing shared food supply
         """
         # Later on, we'll get food from a shared scarce resource, this is just a stub
         if random.random() > 0.5:
@@ -160,7 +160,7 @@ class SelfMutator(object):
         """
         :return: True if alive
         """
-        return self._alive
+        return self._alive and not os.path.exists('killall')
 
     @staticmethod
     def _weighted_choice(choices):
@@ -233,9 +233,9 @@ def setup_logging():
     Set up logging
     :return: None
     """
-    logging.basicConfig(level=logging.INFO,
+    logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(filename)s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M')
+                        datefmt='%m-%d %H:%M:%S')
 #    logger = logging.getLogger('log')
 #    logger.setLevel(logging.INFO)
 #    ch = logging.StreamHandler()
@@ -249,6 +249,7 @@ def main(arguments):
     major = 0
     minor = 0
     micro = 3
+    setup_logging()
     logging.info('self_mutator %d.%d.%d', major, minor, micro)
     parser = argparse.ArgumentParser()
     parser.add_argument("id", help="Unique identifier for this creature (x.y.z...)", type=str)
