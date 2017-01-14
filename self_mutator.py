@@ -154,20 +154,22 @@ class SelfMutator(object):
                     self.die('hunger')
                 elif self.is_hungry:
                     logging.debug('I am hungry: %d', self.energy)
-                    self.eat(2)
+                    self.eat(SelfMutator.hunger_energy - self.energy)
 
                 if self.can_reproduce:
                     if random.random() > SelfMutator.reproduction_chance:
                         self.reproduce()
                 else:
-                    self.farm(1)
+                    if not self.is_hungry:
+                        self.farm((self.energy - SelfMutator.hunger_energy) + 2)
 
     def reproduce(self):
         """ Copies this to a child with flawed copy
         :return: None
         """
         our_basename, our_extension = os.path.splitext(__file__)
-        child_name = '%s.%d%s' % (our_basename, self.offspring_count, our_extension)
+        child_name = '%s.%s.%d%s' % (our_basename, self.identity, self.offspring_count,
+                                     our_extension)
         if self._should_reproduce:
             logging.info('Reproducing to %s...', child_name)
             child = open(child_name, 'w')
@@ -176,10 +178,10 @@ class SelfMutator(object):
             child.close()
             self.offspring_count += 1
             detached_process = 0x00000008 # Windows only?
-            logging.info('executing child')
             self.farm(1 / SelfMutator.reproduction_chance)
-            subprocess.Popen(['python', child_name, '--seed', '100', '--maxgen', '3',
-                              self.identity], close_fds=True, creationflags=detached_process)
+            cmd = ['python', child_name, '--id', '%s.%d' % (self.identity, self.offspring_count)]
+            logging.info('executing %s', ' '.join(cmd))
+            subprocess.Popen(cmd, close_fds=True, creationflags=detached_process)
         else:
             logging.debug('Would reproduce, but just testing...')
 
@@ -277,7 +279,7 @@ class SelfMutator(object):
 
         """
         if self.adjust_food_source(amount):
-            self.energy -= amount
+            # self.energy -= amount
             logging.debug('farmed for %d', amount)
             return True
         else:
@@ -291,25 +293,41 @@ class SelfMutator(object):
         :param amount: Positive to add food (farming), negative to remove food (eating)
         :return:
         """
+        food_path = 'food.txt'
+        if amount < 0: # We try harder to eat than farm
+            timeout = 0.5
+        else:
+            timeout = 0.1
         mutex = NamedMutex(b'self_mutator_lock')
-        if mutex.acquire(timeout=0.1):
-            logging.debug('acquired lock!')
-            with open('food.txt', 'a+') as food:
-                food.seek(0)
-                data = food.read()
-                if data.isnumeric():
-                    available_food = int(data)
-                else:
-                    available_food = 10
-                available_food += amount
-                if available_food >= 0:
+        if mutex.acquire(timeout=timeout):
+            logging.debug('acquired lock! amount: %d', amount)
+            if os.path.exists(food_path):
+                with open(food_path, 'r+') as food:
                     food.seek(0)
-                    food.write(str(available_food))
-                    food.truncate()
-                    return True
-                else:
-                    logging.debug('not enough food!')
-                    return False
+                    data = food.read()
+                    logging.debug('data: %s', data)
+                    if data.isnumeric():
+                        available_food = int(data)
+                        logging.debug('available_food: %s', available_food)
+                    else:
+                        logging.debug('not numeric')
+                        available_food = 10
+                    available_food += amount
+                    if available_food >= 0:
+                        data_to_write = str(available_food)
+                        logging.debug('data_to_write: %s', data_to_write)
+                        food.seek(0)
+                        food.write(data_to_write)
+                        food.truncate()
+                        return True
+                    else:
+                        logging.debug('not enough food!')
+                        return False
+            else:
+                logging.debug('%s did not exist, creating it with 10...', food_path)
+                with open(food_path, 'w') as food:
+                    food.write('10')
+                return True
         else:
             logging.debug('failed to acquire lock!')
             return False
