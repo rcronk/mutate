@@ -9,12 +9,114 @@ import string
 import subprocess
 import time
 import sys
-
+import ctypes
+from ctypes import wintypes
 import logging
+
+
+# From http://code.activestate.com/recipes/577794-win32-named-mutex-class-for-system-wide-mutex/
+# Windows only - need a linux version of this.  Perhaps fnctl.flock?
+# Named mutex handling (for Win32).
+# Create ctypes wrapper for Win32 functions we need, with correct argument/return types
+_CREATE_MUTEX = ctypes.windll.kernel32.CreateMutexA
+_CREATE_MUTEX.argtypes = [wintypes.LPCVOID, wintypes.BOOL, wintypes.LPCSTR]
+_CREATE_MUTEX.restype = wintypes.HANDLE
+
+_WAIT_FOR_SINGLE_OBJECT = ctypes.windll.kernel32.WaitForSingleObject
+_WAIT_FOR_SINGLE_OBJECT.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+_WAIT_FOR_SINGLE_OBJECT.restype = wintypes.DWORD
+
+_RELEASE_MUTEX = ctypes.windll.kernel32.ReleaseMutex
+_RELEASE_MUTEX.argtypes = [wintypes.HANDLE]
+_RELEASE_MUTEX.restype = wintypes.BOOL
+
+_CLOSE_HANDLE = ctypes.windll.kernel32.CloseHandle
+_CLOSE_HANDLE.argtypes = [wintypes.HANDLE]
+_CLOSE_HANDLE.restype = wintypes.BOOL
+
+
+class NamedMutex(object):
+    """A named, system-wide mutex that can be acquired and released."""
+
+    def __init__(self, name, acquired=False):
+        """Create named mutex with given name, also acquiring mutex if acquired is True.
+        Mutex names are case sensitive, and a filename (with backslashes in it) is not a
+        valid mutex name. Raises WindowsError on error.
+
+        """
+        self.name = name
+        self.acquired = acquired
+        ret = _CREATE_MUTEX(None, False, name)
+        if not ret:
+            raise ctypes.WinError()
+        self.handle = ret
+        if acquired:
+            self.acquire()
+
+    def acquire(self, timeout=None):
+        """Acquire ownership of the mutex, returning True if acquired. If a timeout
+        is specified, it will wait a maximum of timeout seconds to acquire the mutex,
+        returning True if acquired, False on timeout. Raises WindowsError on error.
+
+        """
+        if timeout is None:
+            # Wait forever (INFINITE)
+            timeout = 0xFFFFFFFF
+        else:
+            timeout = int(round(timeout * 1000))
+        ret = _WAIT_FOR_SINGLE_OBJECT(self.handle, timeout)
+        if ret in (0, 0x80):
+            # Note that this doesn't distinguish between normally acquired (0) and
+            # acquired due to another owning process terminating without releasing (0x80)
+            self.acquired = True
+            return True
+        elif ret == 0x102:
+            # Timeout
+            self.acquired = False
+            return False
+        else:
+            # Waiting failed
+            raise ctypes.WinError()
+
+    def release(self):
+        """Relase an acquired mutex. Raises WindowsError on error."""
+        ret = _RELEASE_MUTEX(self.handle)
+        if not ret:
+            raise ctypes.WinError()
+        self.acquired = False
+
+    def close(self):
+        """Close the mutex and release the handle."""
+        if self.handle is None:
+            # Already closed
+            return
+        ret = _CLOSE_HANDLE(self.handle)
+        if not ret:
+            raise ctypes.WinError()
+        self.handle = None
+
+    __del__ = close
+
+    def __repr__(self):
+        """Return the Python representation of this mutex."""
+        return '{0}({1!r}, acquired={2})'.format(
+            self.__class__.__name__, self.name, self.acquired)
+
+    __str__ = __repr__
+
+    # Make it a context manager so it can be used with the "with" statement
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
 
 
 class SelfMutator(object):
     """ This is a creature that can duplicate itself with errors. """
+    # pylint: disable=too-many-instance-attributes
+
     maximum_age = 100               # Die of old age
     start_reproducing = 20      # Can reproduce starting at this age
     stop_reproducing = 40       # Stop reproducing at this age
@@ -23,7 +125,7 @@ class SelfMutator(object):
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
     maximum_energy = 10         # If our energy is at this level, we cannot eat more
 
-    def __init__(self, identity, max_gen_depth):
+    def __init__(self, identity, max_gen_depth, should_reproduce=True):
         self._identity = identity
         self.max_gen_depth = max_gen_depth
         logging.debug('max_depth: %d, current_gen_depth: %d', max_gen_depth, self.generation)
@@ -32,7 +134,7 @@ class SelfMutator(object):
         self._age = 0
         self._energy = SelfMutator.maximum_energy
         self._alive = True
-        self._should_reproduce = False
+        self._should_reproduce = should_reproduce
         self.offspring_count = 0
 
     def live(self, time_to_live):
@@ -42,7 +144,7 @@ class SelfMutator(object):
         """
         for _ in range(time_to_live):
             if self.alive:
-                time.sleep(1)
+                time.sleep(0.25)
                 self._age += 1
                 self._energy -= 1
                 logging.debug('I am %d years old.', self._age)
@@ -52,13 +154,13 @@ class SelfMutator(object):
                     self.die('hunger')
                 elif self.is_hungry:
                     logging.debug('I am hungry: %d', self.energy)
-                    self.eat()
-                elif self.can_reproduce:
+                    self.eat(2)
+
+                if self.can_reproduce:
                     if random.random() > SelfMutator.reproduction_chance:
                         self.reproduce()
-                elif self.is_hungry:
-                    # try to eat, maybe get food, maybe not
-                    pass
+                else:
+                    self.farm(1)
 
     def reproduce(self):
         """ Copies this to a child with flawed copy
@@ -66,8 +168,8 @@ class SelfMutator(object):
         """
         our_basename, our_extension = os.path.splitext(__file__)
         child_name = '%s.%d%s' % (our_basename, self.offspring_count, our_extension)
-        logging.info('Reproducing to %s...', child_name)
         if self._should_reproduce:
+            logging.info('Reproducing to %s...', child_name)
             child = open(child_name, 'w')
             with open(__file__) as original:
                 child.write(self._flawed_copy(original.read()))
@@ -75,8 +177,11 @@ class SelfMutator(object):
             self.offspring_count += 1
             detached_process = 0x00000008 # Windows only?
             logging.info('executing child')
+            self.farm(1 / SelfMutator.reproduction_chance)
             subprocess.Popen(['python', child_name, '--seed', '100', '--maxgen', '3',
                               self.identity], close_fds=True, creationflags=detached_process)
+        else:
+            logging.debug('Would reproduce, but just testing...')
 
     def die(self, reason):
         """
@@ -147,13 +252,67 @@ class SelfMutator(object):
         """
         return self.energy < SelfMutator.hunger_energy
 
-    def eat(self):
+    def eat(self, amount):
         """
-        :return: Causes creature to eat, increasing energy, reducing shared food supply
+        Causes creature to eat, increasing energy, reducing shared food supply.
+        If others are at the pool, we fail to eat, nothing happens.
+        :return: True if successful
+        :param amount: Always positive - how much do we want to eat?  If not enough, nothing happens
+
         """
-        # Later on, we'll get food from a shared scarce resource, this is just a stub
-        if random.random() > 0.5:
-            self.energy += 3
+        if self.adjust_food_source(-amount):
+            self.energy += amount
+            logging.debug('ate %d', amount)
+            return True
+        else:
+            logging.debug('failed to eat %d', amount)
+            return False
+
+    def farm(self, amount):
+        """
+        Add food to the pool - if others are at the pool, we fail to farm, nothing happens.
+        It costs energy to successfully farm.
+        :return: True if successful
+        :param amount: Always positive - how much do we want to farm?
+
+        """
+        if self.adjust_food_source(amount):
+            self.energy -= amount
+            logging.debug('farmed for %d', amount)
+            return True
+        else:
+            logging.debug('failed to farm for %d', amount)
+            return False
+
+    @staticmethod
+    def adjust_food_source(amount):
+        """
+        Adds or removes food from the global food pool.
+        :param amount: Positive to add food (farming), negative to remove food (eating)
+        :return:
+        """
+        mutex = NamedMutex(b'self_mutator_lock')
+        if mutex.acquire(timeout=0.1):
+            logging.debug('acquired lock!')
+            with open('food.txt', 'a+') as food:
+                food.seek(0)
+                data = food.read()
+                if data.isnumeric():
+                    available_food = int(data)
+                else:
+                    available_food = 10
+                available_food += amount
+                if available_food >= 0:
+                    food.seek(0)
+                    food.write(str(available_food))
+                    food.truncate()
+                    return True
+                else:
+                    logging.debug('not enough food!')
+                    return False
+        else:
+            logging.debug('failed to acquire lock!')
+            return False
 
     @property
     def alive(self):
@@ -252,15 +411,21 @@ def main(arguments):
     setup_logging()
     logging.info('self_mutator %d.%d.%d', major, minor, micro)
     parser = argparse.ArgumentParser()
-    parser.add_argument("id", help="Unique identifier for this creature (x.y.z...)", type=str)
+    parser.add_argument("--id", help="Unique identifier for this creature (x.y.z...)", type=str,
+                        default='0')
     parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
     parser.add_argument("--maxgen", help="Maximum generations", type=int, default=3)
+    parser.add_argument("--reproduce", help="Reproduce normally, default", dest='reproduce',
+                        action='store_true')
+    parser.add_argument("--no-reproduce", help="Do not actually reproduce (for testing)",
+                        dest='reproduce', action='store_false')
+    parser.set_defaults(reproduce=True)
     args = parser.parse_args(arguments)
 
     logging.info('args: %s', args)
     random.seed(args.seed)
 
-    creature = SelfMutator(args.id, args.maxgen)
+    creature = SelfMutator(args.id, args.maxgen, should_reproduce=args.reproduce)
     creature.live(SelfMutator.maximum_age)
 
 

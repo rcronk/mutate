@@ -8,11 +8,11 @@ import self_mutator
 
 class TestSelfMutator(unittest.TestCase):
     def test_basic_lifetime(self):
-        logging.basicConfig(level=logging.INFO,
+        logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s %(filename)s %(levelname)-8s %(message)s',
                             datefmt='%m-%d %H:%M:%S')
         identity = '1'
-        creature = self_mutator.SelfMutator(identity, 5)
+        creature = self_mutator.SelfMutator(identity, 5, should_reproduce=False)
         self.assertEqual(0, creature.age)
         self.assertEqual(self_mutator.SelfMutator.maximum_energy, creature.energy)
         self.assertEqual(identity, creature.identity)
@@ -21,13 +21,13 @@ class TestSelfMutator(unittest.TestCase):
         self.assertTrue(creature.alive)
         creature.live(1)
         self.assertEqual(1, creature.age)
-        self.assertEqual(9, creature.energy)
+        self.assertEqual(8, creature.energy)
         creature.live(self_mutator.SelfMutator.maximum_age)
         self.assertFalse(creature.alive)
 
     def test_filename(self):
         identity = '1'
-        creature = self_mutator.SelfMutator(identity, 5)
+        creature = self_mutator.SelfMutator(identity, 5, should_reproduce=False)
         self.assertEqual('self_mutator.py', os.path.basename(creature.filename))
 
     def test_max_gen_depth(self):
@@ -35,7 +35,7 @@ class TestSelfMutator(unittest.TestCase):
         self.assertRaises(Exception, self_mutator.SelfMutator, identity, 3)
 
     def test_main(self):
-        self_mutator.main(['1.2', '--seed', '13', '--maxgen', '3'])
+        self_mutator.main(['--seed', '13', '--maxgen', '3', '--no-reproduce'])
 
     def test_flawed_copy(self):
         for i in range(1000):
