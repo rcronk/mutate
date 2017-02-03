@@ -169,7 +169,7 @@ class SelfMutator(object):
         :return: None
         """
         our_basename, our_extension = os.path.splitext(__file__)
-        child_name = '%s.%s.%d%s' % (our_basename, self.identity, self.offspring_count,
+        child_name = '%s.%d%s' % (our_basename, self.offspring_count,
                                      our_extension)
         if self._should_reproduce:
             logging.info('Reproducing to %s...', child_name)
@@ -177,12 +177,12 @@ class SelfMutator(object):
             with open(__file__) as original:
                 child.write(self._flawed_copy(original.read()))
             child.close()
-            self.offspring_count += 1
             detached_process = 0x00000008 # Windows only?
             self.farm(1 / SelfMutator.reproduction_chance)
             cmd = ['python', child_name, '--id', '%s.%d' % (self.identity, self.offspring_count)]
             logging.info('executing %s', ' '.join(cmd))
             subprocess.Popen(cmd, close_fds=True, creationflags=detached_process)
+            self.offspring_count += 1
         else:
             logging.debug('Would reproduce, but just testing...')
 
@@ -441,7 +441,7 @@ def main(arguments):
     logging.info('self_mutator %d.%d.%d', major, minor, micro)
     parser = argparse.ArgumentParser()
     parser.add_argument("--id", help="Unique identifier for this creature (x.y.z...)", type=str,
-                        default='0')
+                        default='')
     parser.add_argument("--seed", help="Random seed", type=float, default=time.time())
     parser.add_argument("--maxgen", help="Maximum generations", type=int, default=3)
     parser.add_argument("--reproduce", help="Reproduce normally, default", dest='reproduce',
