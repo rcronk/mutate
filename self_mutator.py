@@ -117,9 +117,10 @@ class SelfMutator(object):
     """ This is a creature that can duplicate itself with errors. """
     # pylint: disable=too-many-instance-attributes
 
-    maximum_age = 100               # Die of old age
     start_reproducing = 20      # Can reproduce starting at this age
     stop_reproducing = 40       # Stop reproducing at this age
+    retirement_age = 65         # Stop farming, just eat
+    maximum_age = 100           # Die of old age
     reproduction_chance = 0.25  # Each year, we have this chance to have offspring
     minimum_energy = 0          # If our energy gets below this, we die
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
@@ -232,6 +233,13 @@ class SelfMutator(object):
         self._energy = value
 
     @property
+    def can_farm(self):
+        """
+        :return: True if age < retirement age
+        """
+        return self.age < self.retirement_age
+
+    @property
     def generation(self):
         """
         :return: How many generations since first creature
@@ -278,13 +286,16 @@ class SelfMutator(object):
         :param amount: Always positive - how much do we want to farm?
 
         """
-        if self.adjust_food_source(amount):
-            # self.energy -= amount
-            logging.debug('farmed for %d', amount)
-            return True
+        if self.can_farm:
+            if self.adjust_food_source(amount):
+                # self.energy -= amount
+                logging.debug('farmed for %d', amount)
+                return True
+            else:
+                logging.debug('failed to farm for %d', amount)
+                return False
         else:
-            logging.debug('failed to farm for %d', amount)
-            return False
+            logging.debug('cannot farm any more - too old?')
 
     @staticmethod
     def adjust_food_source(amount):
