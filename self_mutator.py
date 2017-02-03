@@ -145,7 +145,8 @@ class SelfMutator(object):
         """
         for _ in range(time_to_live):
             if self.alive:
-                time.sleep(0.25)
+                if self._should_reproduce:  # If we're unit testing, don't sleep
+                    time.sleep(0.25)
                 self._age += 1
                 self._energy -= 1
                 logging.debug('I am %d years old.', self._age)
@@ -170,7 +171,7 @@ class SelfMutator(object):
         """
         our_basename, our_extension = os.path.splitext(__file__)
         child_name = '%s.%d%s' % (our_basename, self.offspring_count,
-                                     our_extension)
+                                  our_extension)
         if self._should_reproduce:
             logging.info('Reproducing to %s...', child_name)
             child = open(child_name, 'w')
