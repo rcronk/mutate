@@ -117,14 +117,14 @@ class SelfMutator(object):
     """ This is a creature that can duplicate itself with errors. """
     # pylint: disable=too-many-instance-attributes
 
-    start_reproducing = 20      # Can reproduce starting at this age
-    stop_reproducing = 40       # Stop reproducing at this age
-    retirement_age = 65         # Stop farming, just eat
+    start_reproducing = 18      # Can reproduce starting at this age
+    stop_reproducing = 55       # Stop reproducing at this age
+    retirement_age = 90         # Stop farming, just eat
     maximum_age = 100           # Die of old age
-    reproduction_chance = 0.25  # Each year, we have this chance to have offspring
+    reproduction_chance = .9    # Each year, we have this chance to have offspring
     minimum_energy = 0          # If our energy gets below this, we die
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
-    maximum_energy = 10         # If our energy is at this level, we cannot eat more
+    maximum_energy = 40         # If our energy is at this level, we cannot eat more
 
     def __init__(self, identity, max_gen_depth, should_reproduce=True):
         self._identity = identity
@@ -159,7 +159,7 @@ class SelfMutator(object):
                     self.eat(SelfMutator.hunger_energy - self.energy)
 
                 if self.can_reproduce:
-                    if random.random() > SelfMutator.reproduction_chance:
+                    if random.random() < SelfMutator.reproduction_chance:
                         self.reproduce()
                 else:
                     if not self.is_hungry:
@@ -307,9 +307,9 @@ class SelfMutator(object):
         """
         food_path = 'food.txt'
         if amount < 0: # We try harder to eat than farm
-            timeout = 0.5
+            timeout = 0.50
         else:
-            timeout = 0.1
+            timeout = 0.25
         mutex = NamedMutex(b'self_mutator_lock')
         if mutex.acquire(timeout=timeout):
             logging.debug('acquired lock! amount: %d', amount)
