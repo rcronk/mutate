@@ -117,14 +117,8 @@ class SelfMutator(object):
     """ This is a creature that can duplicate itself with errors. """
     # pylint: disable=too-many-instance-attributes
 
-    start_reproducing = 18      # Can reproduce starting at this age
-    stop_reproducing = 55       # Stop reproducing at this age
-    retirement_age = 90         # Stop farming, just eat
-    maximum_age = 100           # Die of old age
     reproduction_chance = .9    # Each year, we have this chance to have offspring
-    minimum_energy = 0          # If our energy gets below this, we die
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
-    maximum_energy = 40         # If our energy is at this level, we cannot eat more
 
     def __init__(self, identity, max_gen_depth, should_reproduce=True):
         self._identity = identity
@@ -133,7 +127,7 @@ class SelfMutator(object):
         if self.generation > self.max_gen_depth:
             raise Exception('Exiting: beyond max generation depth...')
         self._age = 0
-        self._energy = SelfMutator.maximum_energy
+        self._energy = 40
         self._alive = True
         self._should_reproduce = should_reproduce
         self.offspring_count = 0
@@ -143,6 +137,12 @@ class SelfMutator(object):
         :param time_to_live: The number of units of time to live for.
         :return: None
         """
+        maximum_age = 100  # Die of old age
+        minimum_energy = 0  # If our energy gets below this, we die
+
+        if time_to_live == 0:
+            time_to_live = maximum_age
+
         for _ in range(time_to_live):
             if self.alive:
                 if self._should_reproduce:  # If we're unit testing, don't sleep
@@ -150,9 +150,9 @@ class SelfMutator(object):
                 self._age += 1
                 self._energy -= 1
                 logging.debug('I am %d years old.', self._age)
-                if self._age >= SelfMutator.maximum_age:
+                if self._age >= maximum_age:
                     self.die('old_age')
-                elif self._energy <= SelfMutator.minimum_energy:
+                elif self._energy <= minimum_energy:
                     self.die('hunger')
                 elif self.is_hungry:
                     logging.debug('I am hungry: %d', self.energy)
@@ -238,7 +238,8 @@ class SelfMutator(object):
         """
         :return: True if age < retirement age
         """
-        return self.age < self.retirement_age
+        retirement_age = 90  # Stop farming, just eat
+        return self.age < retirement_age
 
     @property
     def generation(self):
@@ -252,7 +253,9 @@ class SelfMutator(object):
         """
         :return: True if we can reproduce right now
         """
-        can = SelfMutator.start_reproducing <= self.age <= SelfMutator.stop_reproducing
+        start_reproducing = 18
+        stop_reproducing = 40
+        can = start_reproducing <= self.age <= stop_reproducing
         can = can and not self.is_hungry
         return can
 
@@ -456,7 +459,7 @@ def main(arguments):
     random.seed(args.seed)
 
     creature = SelfMutator(args.id, args.maxgen, should_reproduce=args.reproduce)
-    creature.live(SelfMutator.maximum_age)
+    creature.live(0)
 
 
 if __name__ == "__main__":

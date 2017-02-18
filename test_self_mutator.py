@@ -14,15 +14,13 @@ class TestSelfMutator(unittest.TestCase):
         identity = '1'
         creature = self_mutator.SelfMutator(identity, 5, should_reproduce=False)
         self.assertEqual(0, creature.age)
-        self.assertEqual(self_mutator.SelfMutator.maximum_energy, creature.energy)
         self.assertEqual(identity, creature.identity)
         self.assertEqual(1, creature.generation)
         self.assertFalse(creature.can_reproduce)
         self.assertTrue(creature.alive)
         creature.live(1)
         self.assertEqual(1, creature.age)
-        #self.assertEqual(9, creature.energy)
-        creature.live(self_mutator.SelfMutator.maximum_age)
+        creature.live(0)
         self.assertFalse(creature.alive)
 
     def test_filename(self):
