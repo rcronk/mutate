@@ -436,6 +436,7 @@ def setup_logging():
 #    ch.setFormatter(formatter)
 #    logger.addHandler(ch)
 
+
 def main(arguments):
     """ Entry point for command line. """
     major = 0
