@@ -50,7 +50,7 @@ class TestSelfMutator(unittest.TestCase):
                     self.assertNotEqual(result, creature)
 
     def test_pylint(self):
-        self.assertFalse(subprocess.call(['pylint', 'self_mutator.py']))
+        self.assertFalse(subprocess.call(['pylint', '--disable=locally-disabled,fixme', 'self_mutator.py']))
 
 
 if __name__ == '__main__':

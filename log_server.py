@@ -1,7 +1,8 @@
 import pickle
 import logging
 import logging.handlers
-import socketserver
+import socketserver  # change to SocketServer (CamelCase) in python 2.7
+import threading
 import struct
 
 
@@ -73,12 +74,19 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
                 self.handle_request()
             abort = self.abort
 
-def main():
-    logging.basicConfig(
-        format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
-    tcpserver = LogRecordSocketReceiver()
-    print('About to start TCP server...')
-    tcpserver.serve_until_stopped()
 
-if __name__ == '__main__':
-    main()
+class LogServerThread(threading.Thread):
+    def __init__(self, thread_id, name, counter):
+        threading.Thread.__init__(self)
+        self.threadID = thread_id
+        self.name = name
+        self.counter = counter
+
+    def run(self):
+        print("Starting " + self.name)
+        logging.basicConfig(
+            format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
+        tcp_server = LogRecordSocketReceiver()
+        print('About to start TCP logging server thread... (ctrl-c to stop)')
+        tcp_server.serve_until_stopped()
+        print("Exiting TCP logging server thread " + self.name)

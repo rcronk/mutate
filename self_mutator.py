@@ -12,7 +12,9 @@ import sys
 import ctypes
 from ctypes import wintypes
 import logging
+import logging.handlers
 
+import log_server
 
 # From http://code.activestate.com/recipes/577794-win32-named-mutex-class-for-system-wide-mutex/
 # Windows only - need a linux version of this.  Perhaps fnctl.flock?
@@ -116,6 +118,7 @@ class NamedMutex(object):
 class SelfMutator(object):
     """ This is a creature that can duplicate itself with errors. """
     # pylint: disable=too-many-instance-attributes
+    # Eight is fine here.
 
     reproduction_chance = .9    # Each year, we have this chance to have offspring
     hunger_energy = 5           # If our energy is below this, we're hungry and will search for food
@@ -170,6 +173,8 @@ class SelfMutator(object):
         :return: None
         """
         our_basename, our_extension = os.path.splitext(__file__)
+        # TODO: Perhaps do random temp files instead of generations in name.  id could go inside
+        #       the file?
         child_name = '%s.%d%s' % (our_basename, self.offspring_count,
                                   our_extension)
         if self._should_reproduce:
@@ -420,30 +425,35 @@ class SelfMutator(object):
         return source
 
 
-def setup_logging():
+def setup_logging(identity):
     """
     Set up logging
     :return: None
     """
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(filename)s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M:%S')
-#    logger = logging.getLogger('log')
-#    logger.setLevel(logging.INFO)
-#    ch = logging.StreamHandler()
-#    ch.setLevel(logging.INFO)
-#    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#    ch.setFormatter(formatter)
-#    logger.addHandler(ch)
+    if len(identity.split('.')) == 1:
+        print('Setting up ')
+        thread1 = log_server.LogServerThread(1, "LogServerThread", 1)
+        thread1.start()
+
+    # set up client logging - this should be done for everyone
+    root_logger = logging.getLogger('')
+    root_logger.setLevel(logging.DEBUG)
+    socket_handler = logging.handlers.SocketHandler('localhost',
+                                                    logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+    # don't bother with a formatter, since a socket handler sends the event as
+    # an unformatted pickle
+    root_logger.addHandler(socket_handler)
+
+    # Now, we can log to the root logger, or any other logger. First the root...
+    logging.debug('Logging for %s initialized.', identity)
 
 
 def main(arguments):
     """ Entry point for command line. """
     major = 0
-    minor = 0
-    micro = 3
-    setup_logging()
-    logging.info('self_mutator %d.%d.%d', major, minor, micro)
+    minor = 1
+    micro = 0
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--id", help="Unique identifier for this creature (x.y.z...)", type=str,
                         default='')
@@ -456,6 +466,9 @@ def main(arguments):
     parser.set_defaults(reproduce=True)
     args = parser.parse_args(arguments)
 
+    setup_logging(args.id)
+    logging.info('self_mutator %d.%d.%d', major, minor, micro)
+
     logging.info('args: %s', args)
     random.seed(args.seed)
 
@@ -464,5 +477,4 @@ def main(arguments):
 
 
 if __name__ == "__main__":
-    setup_logging()
     main(sys.argv[1:])
