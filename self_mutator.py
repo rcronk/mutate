@@ -13,6 +13,7 @@ import ctypes
 from ctypes import wintypes
 import logging
 import logging.handlers
+import tempfile
 
 import log_server
 
@@ -126,7 +127,7 @@ class SelfMutator(object):
     def __init__(self, identity, max_gen_depth, should_reproduce=True):
         self._identity = identity
         self.max_gen_depth = max_gen_depth
-        logging.debug('max_depth: %d, current_gen_depth: %d', max_gen_depth, self.generation)
+        print('max_depth: %d, current_gen_depth: %d', self.max_gen_depth, self.generation)
         if self.generation > self.max_gen_depth:
             raise Exception('Exiting: beyond max generation depth...')
         self._age = 0
@@ -172,20 +173,19 @@ class SelfMutator(object):
         """ Copies this to a child with flawed copy
         :return: None
         """
-        our_basename, our_extension = os.path.splitext(__file__)
-        # TODO: Perhaps do random temp files instead of generations in name.  id could go inside
-        #       the file?
-        child_name = '%s.%d%s' % (our_basename, self.offspring_count,
-                                  our_extension)
+        child = tempfile.NamedTemporaryFile('w',
+                                            prefix=str(self.generation) + '-',
+                                            suffix='.py',
+                                            dir='.',
+                                            delete=False)
         if self._should_reproduce:
-            logging.info('Reproducing to %s...', child_name)
-            child = open(child_name, 'w')
+            logging.info('Reproducing to %s...', child.name)
             with open(__file__) as original:
                 child.write(self._flawed_copy(original.read()))
             child.close()
             detached_process = 0x00000008 # Windows only?
             self.farm(1 / SelfMutator.reproduction_chance)
-            cmd = ['python', child_name, '--id', '%s.%d' % (self.identity, self.offspring_count)]
+            cmd = ['python', child.name, '--maxgen', self.max_gen_depth, '--id', '%s.%d' % (self.identity, self.offspring_count)]
             logging.info('executing %s', ' '.join(cmd))
             subprocess.Popen(cmd, close_fds=True, creationflags=detached_process)
             self.offspring_count += 1
