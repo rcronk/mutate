@@ -14,6 +14,7 @@ from ctypes import wintypes
 import logging
 import logging.handlers
 import tempfile
+import threading
 
 import log_server
 
@@ -243,8 +244,9 @@ class SelfMutator(object):
         """
         :return: True if age < retirement age
         """
-        retirement_age = 90  # Stop farming, just eat
-        return self.age < retirement_age
+        return False
+        #retirement_age = 90  # Stop farming, just eat
+        #return self.age < retirement_age
 
     @property
     def generation(self):
@@ -425,15 +427,34 @@ class SelfMutator(object):
         return source
 
 
+class FarmingThread(threading.Thread):
+    def __init__(self, thread_id, name, counter):
+        threading.Thread.__init__(self)
+        self.threadID = thread_id
+        self.name = name
+        self.counter = counter
+
+    def run(self):
+        print("Starting " + self.name)
+        logging.basicConfig(
+            format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
+        print('Starting the farming thread (ctrl-c to stop)')
+        while True:
+            SelfMutator.adjust_food_source(1)
+            time.sleep(1)
+
+
 def setup_logging(identity):
     """
     Set up logging
     :return: None
     """
     if len(identity.split('.')) == 1:
-        print('Setting up ')
-        thread1 = log_server.LogServerThread(1, "LogServerThread", 1)
-        thread1.start()
+        log_server_thread = log_server.LogServerThread(1, "LogServerThread", 1)
+        log_server_thread.start()
+
+        farm_thread = FarmingThread(2, 'FarmingThread', 2)
+        farm_thread.start()
 
     # set up client logging - this should be done for everyone
     root_logger = logging.getLogger('')
