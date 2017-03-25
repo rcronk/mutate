@@ -48,6 +48,7 @@ class LogRecordStreamHandler(socketserver.StreamRequestHandler):
         # cycles and network bandwidth!
         logger.handle(record)
 
+
 class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
     """
     Simple TCP socket-based logging receiver suitable for testing.
@@ -63,10 +64,10 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
         self.timeout = 1
         self.logname = None
 
-    def serve_until_stopped(self):
+    def serve_until_stopped(self, keep_running):
         import select
         abort = 0
-        while not abort:
+        while keep_running and not abort:
             rd, wr, ex = select.select([self.socket.fileno()],
                                        [], [],
                                        self.timeout)
@@ -76,17 +77,20 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
 
 
 class LogServerThread(threading.Thread):
+
+    keep_running = True
+
     def __init__(self, thread_id, name, counter):
         threading.Thread.__init__(self)
-        self.threadID = thread_id
+        self.thread_id = thread_id
         self.name = name
         self.counter = counter
 
     def run(self):
         print("Starting " + self.name)
         logging.basicConfig(
-            format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
+            format='%(asctime)s %(process)s %(threadName)s %(levelname)-8s %(message)s')
         tcp_server = LogRecordSocketReceiver()
         print('About to start TCP logging server thread... (ctrl-c to stop)')
-        tcp_server.serve_until_stopped()
+        tcp_server.serve_until_stopped(LogServerThread.keep_running)
         print("Exiting TCP logging server thread " + self.name)

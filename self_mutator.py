@@ -166,27 +166,29 @@ class SelfMutator(object):
                 if self.can_reproduce:
                     if random.random() < SelfMutator.reproduction_chance:
                         self.reproduce()
-                else:
-                    if not self.is_hungry:
-                        self.farm((self.energy - SelfMutator.hunger_energy) + 2)
+#                else:
+#                    if not self.is_hungry:
+#                        self.farm((self.energy - SelfMutator.hunger_energy) + 2)
 
     def reproduce(self):
         """ Copies this to a child with flawed copy
         :return: None
         """
-        child = tempfile.NamedTemporaryFile('w',
-                                            prefix=str(self.generation) + '-',
-                                            suffix='.py',
-                                            dir='.',
-                                            delete=False)
+
         if self._should_reproduce:
+            child = tempfile.NamedTemporaryFile('w',
+                                                prefix=str(self.generation) + '-',
+                                                suffix='.py',
+                                                dir='.',
+                                                delete=False)
             logging.info('Reproducing to %s...', child.name)
             with open(__file__) as original:
                 child.write(self._flawed_copy(original.read()))
             child.close()
             detached_process = 0x00000008 # Windows only?
-            self.farm(1 / SelfMutator.reproduction_chance)
-            cmd = ['python', child.name, '--maxgen', self.max_gen_depth, '--id', '%s.%d' % (self.identity, self.offspring_count)]
+#            self.farm(1 / SelfMutator.reproduction_chance)
+            cmd = ['python', child.name, '--maxgen', str(self.max_gen_depth), '--id', '%s.%d' %
+                   (self.identity, self.offspring_count)]
             logging.info('executing %s', ' '.join(cmd))
             subprocess.Popen(cmd, close_fds=True, creationflags=detached_process)
             self.offspring_count += 1
@@ -428,45 +430,68 @@ class SelfMutator(object):
 
 
 class FarmingThread(threading.Thread):
+    """
+    A thread that puts food into the food supply
+    """
+    keep_running = True
+
     def __init__(self, thread_id, name, counter):
+        """
+        :param thread_id:
+        :param name:
+        :param counter:
+        """
         threading.Thread.__init__(self)
-        self.threadID = thread_id
+        self.thread_id = thread_id
         self.name = name
         self.counter = counter
 
     def run(self):
+        """
+        :return:
+        """
         print("Starting " + self.name)
-        logging.basicConfig(
-            format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
+#        logging.basicConfig(
+#            format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
         print('Starting the farming thread (ctrl-c to stop)')
-        while True:
+        while FarmingThread.keep_running:
             SelfMutator.adjust_food_source(1)
             time.sleep(1)
 
 
-def setup_logging(identity):
+def setup(identity):
     """
     Set up logging
     :return: None
     """
+    log_server_thread = None
+    farm_thread = None
+
     if len(identity.split('.')) == 1:
+        root_logger = logging.getLogger('')
+        root_logger.setLevel(logging.DEBUG)
+        stream_handler = logging.StreamHandler()
+        root_logger.addHandler(stream_handler)
+
         log_server_thread = log_server.LogServerThread(1, "LogServerThread", 1)
         log_server_thread.start()
 
         farm_thread = FarmingThread(2, 'FarmingThread', 2)
         farm_thread.start()
-
-    # set up client logging - this should be done for everyone
-    root_logger = logging.getLogger('')
-    root_logger.setLevel(logging.DEBUG)
-    socket_handler = logging.handlers.SocketHandler('localhost',
-                                                    logging.handlers.DEFAULT_TCP_LOGGING_PORT)
-    # don't bother with a formatter, since a socket handler sends the event as
-    # an unformatted pickle
-    root_logger.addHandler(socket_handler)
+    else:
+        # set up client logging - this is done for everyone
+        root_logger = logging.getLogger('')
+        root_logger.setLevel(logging.DEBUG)
+        socket_handler = logging.handlers.SocketHandler('localhost',
+                                                        logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+        # don't bother with a formatter, since a socket handler sends the event as
+        # an unformatted pickle
+        root_logger.addHandler(socket_handler)
 
     # Now, we can log to the root logger, or any other logger. First the root...
     logging.debug('Logging for %s initialized.', identity)
+
+    return (log_server_thread, farm_thread)
 
 
 def main(arguments):
@@ -487,7 +512,7 @@ def main(arguments):
     parser.set_defaults(reproduce=True)
     args = parser.parse_args(arguments)
 
-    setup_logging(args.id)
+    (log_server_thread, farming_thread) = setup(args.id)
     logging.info('self_mutator %d.%d.%d', major, minor, micro)
 
     logging.info('args: %s', args)
@@ -495,6 +520,24 @@ def main(arguments):
 
     creature = SelfMutator(args.id, args.maxgen, should_reproduce=args.reproduce)
     creature.live(0)
+
+    if log_server_thread:
+        logging.debug('Stopping the logging server thread...')
+        log_server.LogServerThread.keep_running = False
+        log_server_thread.join(5)
+        if log_server_thread.is_alive():
+            logging.debug('Log server thread didn\'t stop.')
+        else:
+            logging.debug('Log server thread stopped successfully.')
+
+    if farming_thread:
+        logging.debug('Stopping the farming thread...')
+        FarmingThread.keep_running = False
+        farming_thread.join(1)
+        if farming_thread.is_alive():
+            logging.debug('Farming thread didn\'t stop.')
+        else:
+            logging.debug('Farming thread stopped successfully.')
 
 
 if __name__ == "__main__":
