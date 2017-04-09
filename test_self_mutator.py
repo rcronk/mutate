@@ -1,34 +1,56 @@
 import unittest
-import subprocess
 import os
+import subprocess
+import logging
 
 import self_mutator
 
 
 class TestSelfMutator(unittest.TestCase):
     def test_basic_lifetime(self):
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s %(filename)s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M:%S')
         identity = '1'
-        creature = self_mutator.Creature(identity)
-        self.assertAlmostEqual(0.0, creature.age, delta=0.1)
-        self.assertAlmostEqual(10.0, creature.fuel, delta=0.1)
-        self.assertEqual(identity, creature._identity)
+        creature = self_mutator.SelfMutator(identity, 5, should_reproduce=False)
+        self.assertEqual(0, creature.age)
+        self.assertEqual(identity, creature.identity)
         self.assertEqual(1, creature.generation)
         self.assertFalse(creature.can_reproduce)
         self.assertTrue(creature.alive)
         creature.live(1)
-        self.assertAlmostEqual(1.0, creature.age, delta=0.1)
-        self.assertEqual(9, creature.fuel)
-        creature.live(9)  # Warning: This renames the source file.
-        self.assertEqual(0, creature.fuel)
+        self.assertEqual(1, creature.age)
+        creature.live(0)
         self.assertFalse(creature.alive)
 
     def test_filename(self):
         identity = '1'
-        creature = self_mutator.Creature(identity)
+        creature = self_mutator.SelfMutator(identity, 5, should_reproduce=False)
         self.assertEqual('self_mutator.py', os.path.basename(creature.filename))
 
-#    def test_pylint(self):
-#        self.assertFalse(subprocess.call(['pylint', 'self_mutator.py']))
+    def test_max_gen_depth(self):
+        identity = '1.2.3.4'
+        self.assertRaises(Exception, self_mutator.SelfMutator, identity, 3)
+
+    def test_main(self):
+        self_mutator.main(['--seed', '13', '--maxgen', '3', '--no-reproduce'])
+
+    def test_flawed_copy(self):
+        for i in range(1000):
+            creature = 'abcdefg'
+            result = self_mutator.SelfMutator._flawed_copy(creature)
+            if len(result) == len(creature): # overwrite
+                pass # an overwrite is usually different, but rarely the same so we can't test
+            elif len(result) == len(creature) - 1: # delete
+                pass # We deleted something, but we don't know what it was without some inspection
+            else:
+                if result[:-1] == creature or result[1:] == creature:
+                    self.assertNotEqual(result, creature)
+                else:
+                    self.assertNotEqual(result, creature)
+
+    def test_pylint(self):
+        self.assertFalse(subprocess.call(['pylint', '--disable=locally-disabled,fixme', 'self_mutator.py']))
 
 
 if __name__ == '__main__':
