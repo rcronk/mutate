@@ -17,17 +17,17 @@ enormously, because it determines how a random change translates into a change i
 behavior.
 
 **Genotype**
-The organism's code — the actual sequence of characters, bits, or instructions that
+The organism's code: the actual sequence of characters, bits, or instructions that
 gets copied and mutated.
 
 **Phenotype**
 What the organism *does* when that code runs. Its behavior.
 
-**Genotype–phenotype map**
+**Genotype-phenotype map**
 The rule connecting the two: how a change in the code produces a change in behavior.
 This is the single most important design decision in the whole project. In Python
-source, most single-character changes produce a syntax error — the organism doesn't
-run at all. In DNA, many single-base changes produce no behavioral change whatsoever.
+source, most single-character changes produce a syntax error, and the organism
+doesn't run at all. In DNA, many single-base changes produce no behavioral change whatsoever.
 These are wildly different maps, and they produce wildly different results from the
 same evolutionary process.
 
@@ -39,7 +39,7 @@ same evolutionary process.
 Change one symbol to another. `9` becomes `3`.
 
 **Insertion / deletion (indel)**
-Add or remove symbols. The current `mutate.py` can insert but *cannot delete* —
+Add or remove symbols. The current `mutate.py` can insert but *cannot delete*, so
 genomes can only grow.
 
 **Duplication**
@@ -70,7 +70,7 @@ The rule that assigns that number.
 
 **Binary fitness**
 Pass or fail, alive or dead. Nothing in between. *This is what every experiment in
-the original `mutate.py` used* — the test suite either exits 0 or it doesn't.
+the original `mutate.py` used*: the test suite either exits 0 or it doesn't.
 
 **Graded fitness**
 A continuous score. Allows "slightly better," which is what makes gradual improvement
@@ -79,7 +79,7 @@ possible at all.
 **Fitness landscape**
 Picture every possible genome laid out on a map, with height representing fitness.
 Evolution is a walk across this landscape. A *gradient* is a slope to climb. Binary
-fitness produces a landscape with no slopes — just a flat plateau with lethal cliffs.
+fitness produces a landscape with no slopes, just a flat plateau with lethal cliffs.
 Nothing can climb anything, because there is no "uphill."
 
 **Purifying (negative) selection**
@@ -95,8 +95,8 @@ has yet used positive selection.**
 Change in a population that happens by chance rather than by selection, when
 variations make no fitness difference. Real, and a major force in small populations.
 
-> **Worked example — the beak result.** `test_beak.py` asserts the beak length is
-> ≤ 9. The ancestor returns 9, which already passes. So do 8, 5, and 3 — every value
+> **Worked example: the beak result.** `test_beak.py` asserts the beak length is
+> ≤ 9. The ancestor returns 9, which already passes. So do 8, 5, and 3. Every value
 > passes equally, and none is favored. The observed drift from 9 to 3 was therefore
 > *genetic drift under a ceiling constraint*, not adaptation. The original wiki
 > presents this as the project's one demonstration of adaptation. It is not one.
@@ -146,7 +146,7 @@ one particular arrangement is. That distinction is the whole argument.
 > claim measurable rather than rhetorical.
 
 > **What functional information deliberately does not capture.** It says nothing
-> about *meaning* or *reference* — whether symbols point to things in the world, and
+> about *meaning* or *reference*, whether symbols point to things in the world, and
 > whether that requires a mind. That is a philosophical claim, not a measurable one.
 > This project can measure rarity of function. It cannot measure whether meaning
 > requires a mind. Keeping these separate is what allows the results to be taken
@@ -169,12 +169,12 @@ included mutations which were harmful when they arose, implying a higher number.
 
 **Virtual machine (VM)**
 A small simulated computer, written in Python, that runs organism genomes as
-programs. Runs entirely inside one process — no forking, no operating system
-processes. Millions of organisms instead of thousands.
+programs. Runs entirely inside one process, with no forking and no operating
+system processes. Millions of organisms instead of thousands.
 
 **Instruction set**
 The list of operations an organism's code can express. Designed so that *every*
-possible sequence is runnable — there is no such thing as a syntax error. A mutation
+possible sequence is runnable, so there is no such thing as a syntax error. A mutation
 changes what a program does, never whether it parses.
 
 **Two-level translation**
@@ -188,7 +188,7 @@ amino acids, so several codons mean the same thing.
 
 **Redundancy (degeneracy)**
 How many codons map to the same instruction. High redundancy means many mutations
-change nothing — the organism is buffered against damage.
+change nothing, so the organism is buffered against damage.
 
 **Neutral mutation**
 A mutation with no effect on behavior or fitness.
@@ -204,7 +204,7 @@ This project's key innovation: **making codon-table redundancy an adjustable
 parameter rather than a fixed assumption.** Set it to zero and the substrate is as
 brittle as Python source. Set it to 64→20 and it is as buffered as textbook DNA.
 Overlay a second reading frame and the redundancy gets consumed by the second code,
-collapsing the effective neutral space — the scenario implied by Trifonov's work on
+collapsing the effective neutral space, the scenario implied by Trifonov's work on
 multiple overlapping codes in DNA.
 
 Every position in the dispute over how forgiving biology "really is" becomes a
@@ -230,7 +230,7 @@ reproducible.
 
 **Organism-generations**
 Population size × number of generations. The project's measure of total evolutionary
-resources expended — the "how much evolution happened" number.
+resources expended, the "how much evolution happened" number.
 
 **Calibration gate**
 A mandatory check, before any headline experiment, that the simulator can reproduce a
@@ -241,12 +241,12 @@ equipment is broken, not that evolution failed. Passing the gate is what makes a
 later negative result mean something.
 
 **Null result**
-Finding nothing. Only informative if the experiment was capable of finding something —
+Finding nothing. Only informative if the experiment was capable of finding something,
 hence the calibration gate.
 
 **Preregistration**
 Writing down, publicly and with a timestamp, exactly what result would prove the
-hypothesis wrong — *before* running anything. Prevents unconscious reinterpretation
+hypothesis wrong, *before* running anything. Prevents unconscious reinterpretation
 of whatever happens. Given that the author of this project holds a strong prior view
 and has said so openly, this is the single most credibility-preserving step available.
 
@@ -275,8 +275,8 @@ in Lenski et al. (2003).
 **Lenski, Ofria, Pennock & Adami (2003)**, *Nature* 423:139
 Evolved EQU from replication-only ancestors in 23 of 50 populations **when simpler
 logic functions were also rewarded**, and in **0 of 50** when only EQU was rewarded.
-The strongest existing empirical claim against this project's hypothesis, and also —
-via its own control condition — the strongest evidence that scaffolding is doing
+The strongest existing empirical claim against this project's hypothesis, and also, via
+its own control condition, the strongest evidence that scaffolding is doing
 substantial work.
 
 **Tierra (Ray, 1991)**
@@ -293,5 +293,5 @@ Catalogued multiple overlapping codes sharing the same DNA sequence.
 **dN/dS**
 A standard method comparing rates of amino-acid-changing to silent substitutions,
 using silent sites as a neutral baseline. Relevant because it works, which means
-neutral variation in real genomes is not zero — placing a floor under how brittle
+neutral variation in real genomes is not zero, placing a floor under how brittle
 biology can be argued to be.

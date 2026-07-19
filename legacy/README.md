@@ -1,4 +1,4 @@
-# Legacy: Initial Findings (2016–2017)
+# Legacy: Initial Findings (2016-2017)
 
 > **Status: ARCHIVED AND SUPERSEDED.**
 >
@@ -15,7 +15,7 @@
 
 ---
 
-## Section A — Corrections to the original findings
+## Section A. Corrections to the original findings
 
 These are errors and overstatements identified on review in 2026. Each is stated plainly
 and located in the original text.
@@ -31,11 +31,11 @@ self.assertGreaterEqual(9, mutated_beak.get_beak_length())
 ```
 
 This passes whenever the beak length is **≤ 9**. The ancestor returns 9, which already
-passes. So do 8, 5, and 3 — every value passes *equally*, and none is favored over any
-other. There is no selective advantage to a shorter beak anywhere in this experiment.
+passes. So do 8, 5, and 3. Every value passes *equally*, and none is favored over
+any other. There is no selective advantage to a shorter beak anywhere in this experiment.
 
 The observed change from 9 to 3 is therefore a **random walk under a ceiling
-constraint** — genetic drift — not selection for a shorter beak. To have tested
+constraint** (genetic drift), not selection for a shorter beak. To have tested
 adaptation, the experiment would have needed a fitness measure that scores shorter
 beaks *better* rather than merely *acceptable*.
 
@@ -49,14 +49,14 @@ anything in this repository.
 
 ### A2. No experiment here used positive selection
 
-Every selector in this version is **binary** — the test suite either exits 0 or it does
-not. A binary viability filter implements *purifying selection* only: it removes what
+Every selector in this version is **binary**: the test suite either exits 0 or it
+does not. A binary viability filter implements *purifying selection* only: it removes what
 breaks and conserves what works. It cannot implement positive selection, because there
 is no such thing as "slightly better" in a pass/fail test, and therefore no fitness
 gradient for anything to climb.
 
-Given that, the observed outcome — protected regions conserved, unprotected regions
-degraded, nothing new appearing — is the mathematically expected behavior of the setup.
+Given that, the observed outcome (protected regions conserved, unprotected regions
+degraded, nothing new appearing) is the mathematically expected behavior of the setup.
 It confirms that purifying selection conserves information, which is uncontested
 textbook biology.
 
@@ -67,7 +67,7 @@ producing directional change was never present in any run.
 ### A3. The mutation operator omits deletion and duplication
 
 `Creature._flawed_copy` implements four operators: prepend, append, insert, and
-overwrite. It therefore **cannot delete**, and genomes can only grow — which is the
+overwrite. It therefore **cannot delete**, and genomes can only grow, which is the
 direct cause of the "garbage numbers at the top and bottom of the file" observed in
 nearly every experiment. That artifact is a property of the operator set, not a finding.
 
@@ -92,7 +92,7 @@ walk produces.
 The original text reasons correctly that there is no natural selection before
 replication. That much is mainstream and is not disputed. But "no natural selection" is
 not the same as "uniform random sampling": origin-of-life proposals rest on a
-non-uniform state space — bond energies, thermodynamic funnels, autocatalysis,
+non-uniform state space: bond energies, thermodynamic funnels, autocatalysis,
 template-directed ligation, concentration mechanisms. This experiment models a flat,
 uniform space in which every symbol is equally probable and equally stable.
 
@@ -112,8 +112,8 @@ external image hosting.
 
 ### A6. Scope of the original conclusion
 
-The concluding claim — that mutation and selection "were not shown to have creative
-power" — is accurate as literally stated but was read, including by the author, as
+The concluding claim, that mutation and selection "were not shown to have creative
+power," is accurate as literally stated but was read, including by the author, as
 support for a much broader claim about biological evolution. The experiments here
 involve a single organism at a time, a brittle substrate in which most mutations are
 immediately fatal, no population, no drift, no recombination, and no fitness gradient.
@@ -121,7 +121,7 @@ No conclusion about biological evolution follows from them.
 
 ---
 
-## Section B — Original text, unaltered
+## Section B. Original text, unaltered
 
 The following is the original wiki page as published, preserved verbatim. Image links
 are retained as they appeared and are known to be broken (see A5); regenerated text
@@ -256,7 +256,7 @@ So far, my intuition has been confirmed by these initial test results: random mu
 
 ---
 
-## Section C — Known code defects in this directory
+## Section C. Known code defects in this directory
 
 Preserved as-is; not fixed, since this code is archived.
 

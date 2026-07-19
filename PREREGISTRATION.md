@@ -1,6 +1,6 @@
 # Preregistration: Measuring the Rate at Which Mutation and Selection Generate Functional Information
 
-**Status:** DRAFT — not yet in force.
+**Status:** DRAFT. Not yet in force.
 **Author:** Robert Cronk
 **Finalized:** _(to be filled: date, git commit SHA, and public timestamp)_
 
@@ -9,7 +9,7 @@
 ## 0. What a preregistration is, and why this document exists
 
 A preregistration is a public, timestamped statement of exactly what an experiment will
-do and what result would prove the author wrong — written and published **before any
+do and what result would prove the author wrong, written and published **before any
 data is collected.**
 
 The problem it solves is not dishonesty. It is that everyone, unavoidably, finds it
@@ -31,7 +31,7 @@ recorded in Section 10 with a timestamp and a reason, and reported in any public
 ## 1. The question
 
 When code is copied with random errors, and non-working copies are discarded, how much
-*new functional information* accumulates — and how does that amount grow as more
+*new functional information* accumulates, and how does that amount grow as more
 computational resources are spent?
 
 This is a question about a **rate**, and therefore about the shape of a curve. It is
@@ -48,19 +48,19 @@ functions can appear in digital evolution. Two things are missing from that lite
 1. **No measured scaling law.** Results are reported at a single scale. There is no
    published curve showing how achievable functional information grows with resources,
    and therefore no empirical basis for extrapolating these results to biological
-   scale — though such extrapolations are routinely made informally.
+   scale, though such extrapolations are routinely made informally.
 
 2. **No accounting for experimenter-supplied information.** When a fitness function
    rewards intermediate steps toward a target ("scaffolding"), some of the information
    in the final result came from the experimenter's reward schedule rather than from
    the evolutionary process. Nobody has quantified how much. Lenski et al.'s own
-   control — EQU evolved in 23 of 50 populations with scaffolding, and 0 of 50 without —
-   suggests the contribution is large, but it has never been measured in bits.
+   control (EQU evolved in 23 of 50 populations with scaffolding, and 0 of 50
+   without) suggests the contribution is large, but it has never been measured in bits.
 
 There is a third gap this project is positioned to address. In biology, the key
 quantity (the fraction of sequences that are functional) can only be estimated by
 contested wet-lab proxies, with published estimates spanning from roughly 1 in 10¹¹
-(Keefe & Szostak 2001) to 1 in 10⁷⁷ (Axe 2004) — sixty-six orders of magnitude,
+(Keefe & Szostak 2001) to 1 in 10⁷⁷ (Axe 2004), sixty-six orders of magnitude,
 depending on method and target. **In a simulation this quantity can be computed
 exactly.** That is the central methodological advantage of this approach.
 
@@ -160,8 +160,8 @@ retained for lineage analysis.
 
 ## 6. Experimental design
 
-**Task.** Self-replication is required for persistence — organisms that cannot copy
-themselves leave no descendants. Layered on top is a formal-language production task
+**Task.** Self-replication is required for persistence. Organisms that cannot
+copy themselves leave no descendants. Layered on top is a formal-language production task
 whose `F` is computable in closed form, providing a difficulty dial that tunes smoothly
 across many orders of magnitude.
 
@@ -179,8 +179,8 @@ across many orders of magnitude.
 - *Drift-only:* mutation with no selection. Baseline for how much functional
   information accumulates by chance alone. Any reported signal must exceed this.
 - *Undirected search:* random genome sampling at matched resource cost. This is the
-  comparison that decides H_log versus H_pow — selection must beat it, and by how much
-  is the entire result.
+  comparison that decides H_log versus H_pow. Selection must beat it, and by how
+  much is the entire result.
 
 ---
 
@@ -204,9 +204,9 @@ It is the single most important safeguard in this document.
 1. Fit both H_log and H_pow to `I_max(R)` by maximum likelihood.
 2. Compare models by BIC. **Decision rule: ΔBIC > 10 constitutes decisive support.**
 3. Report the fit for every cell of the design grid, not only the favorable ones.
-4. Extrapolate the better-fitting model to `R = 10⁴⁰` organism-generations — an
+4. Extrapolate the better-fitting model to `R = 10⁴⁰` organism-generations, an
    order-of-magnitude standing estimate for the total number of cells that have ever
-   lived on Earth — and report predicted `I_max` with 95% confidence intervals.
+   lived on Earth, and report predicted `I_max` with 95% confidence intervals.
 5. Compare that prediction against reference scales for biological functional
    information, reported as a **range** rather than a single figure, since the
    underlying estimates are disputed: a single functional protein fold at
@@ -244,7 +244,7 @@ the results are in.
 
 **This project can establish:**
 - A measured scaling law for functional information under mutation and selection in a
-  defined substrate, with substrate tolerance swept as a parameter — not previously
+  defined substrate, with substrate tolerance swept as a parameter. Not previously
   published.
 - A quantification, in bits, of how much functional information an experimental setup
   contributes through fitness scaffolding versus how much the evolutionary process
@@ -258,13 +258,13 @@ the results are in.
 - That biological evolution did not occur. A simulation is not chemistry, and any
   negative result is answerable with the objection that the substrate is
   unrepresentative. **This objection is valid, and it is the same objection this
-  project levels at extrapolations from Avida — it applies symmetrically and will be
-  stated as such in any publication.**
+  project levels at extrapolations from Avida. It applies symmetrically and will
+  be stated as such in any publication.**
 - That the origin of biological information required a mind. Functional information
   measures the rarity of working arrangements. It says nothing about meaning,
   reference, or intent, and no measurement in this project bears on those questions.
-- Anything about evolutionary theory's other evidential bases — fossil succession,
-  nested genetic hierarchies, biogeography, or directly observed speciation — none of
+- Anything about evolutionary theory's other evidential bases: fossil succession,
+  nested genetic hierarchies, biogeography, or directly observed speciation, none of
   which this experiment touches.
 
 ---
@@ -277,27 +277,27 @@ empty log on a long project is itself suspicious.
 
 | Date | Section | Change | Rationale |
 |---|---|---|---|
-| — | — | — | — |
+| *(no amendments yet)* | | | |
 
 ---
 
 ## References
 
 Axe, D. (2004). Estimating the prevalence of protein sequences adopting functional
-folds. *J. Mol. Biol.* 341:1295–1315.
+folds. *J. Mol. Biol.* 341:1295-1315.
 
 Hazen, R., Griffin, P., Carothers, J., Szostak, J. (2007). Functional information and
-the emergence of biocomplexity. *PNAS* 104:8574–8581.
+the emergence of biocomplexity. *PNAS* 104:8574-8581.
 
 Keefe, A., Szostak, J. (2001). Functional proteins from a random-sequence library.
-*Nature* 410:715–718.
+*Nature* 410:715-718.
 
 Lenski, R., Ofria, C., Pennock, R., Adami, C. (2003). The evolutionary origin of
-complex features. *Nature* 423:139–144.
+complex features. *Nature* 423:139-144.
 
 Ohno, S. (1970). *Evolution by Gene Duplication.* Springer.
 
-Ray, T. (1991). An approach to the synthesis of life. *Artificial Life II*, 371–408.
+Ray, T. (1991). An approach to the synthesis of life. *Artificial Life II*, 371-408.
 
 Trifonov, E. (1989). Multiple codes of nucleotide sequences. *Bull. Math. Biol.*
-51:417–432.
+51:417-432.
