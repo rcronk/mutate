@@ -66,6 +66,21 @@ preregistration that hides its own corrections is worthless.
    information." Root-Bernstein (2024) published a critical response in PNAS, with a
    reply from the original authors in the same issue.
 
+5. **Avida's results have already been shown to depend on unrealistically large
+   selection coefficients.** Nelson & Sanford (2011) varied mutational fitness effects in
+   Avida and reported that at effects of roughly 0.075 or below, no new logic operations
+   evolved and previously evolved ones were lost; at 0.2, half evolved; under Avida's
+   defaults, all evolved routinely. They note that selection coefficients of 0.01 to 0.1
+   are already considered large in real biological systems. **This project does not claim
+   novelty for the observation that fitness-effect magnitude matters.** What is added
+   here is varying the structure of the genotype-phenotype map rather than reward
+   magnitudes, measuring functional information in bits, fitting a scaling law, and
+   extrapolating with confidence intervals.
+
+   *Note for the manuscript: this paper's rebuttal literature has not yet been checked,
+   and the author affiliation carries the same reception risk noted for Dembski & Marks.
+   Cite for its measurement, verify the response literature before relying on it.*
+
 ### 2.2 What remains open. This is where the project's contribution lies.
 
 - **No fitted scaling law for functional information against total resources.** LaBar &
@@ -179,6 +194,27 @@ fixed in advance:
 - **Tunable codon redundancy.** How many codons map to the same instruction is an
   experimental parameter, not a fixed assumption. This makes the substrate's tolerance
   for mutation an independent variable rather than a design decision to be argued over.
+
+- **The sweep range is calibrated to measured biology, not chosen.** The redundancy axis
+  is set so that the resulting **distribution of fitness effects** of random point
+  mutations spans the range measured in real organisms (Eyre-Walker & Keightley 2007),
+  covering the proportions of lethal, deleterious, effectively neutral, and beneficial
+  mutations reported for bacteria, yeast, viruses, and Drosophila. The DFE of each
+  substrate setting is measured and reported alongside every result.
+
+  *Rationale: "we swept redundancy across a range that seemed reasonable" is not
+  defensible. Anchoring the range to a measured biological quantity converts the
+  substrate from an arbitrary choice into an empirical calibration, and is the primary
+  answer to the objection that results in a designed substrate do not transfer. Prior
+  work bears directly on this: Nelson & Sanford (2011) found that reducing Avida's
+  mutational fitness effects toward biologically measured magnitudes eliminated the
+  evolution of complex logic operations entirely.*
+
+- **Multiple structurally distinct substrate families.** At minimum a codon-translation
+  machine and a template-addressing machine in the style of Tierra (Ray 1991), run at
+  matched DFE. Agreement of the fitted scaling exponent across architecturally unrelated
+  substrates is empirical support for portability. Divergence is reported as a
+  sensitivity bound on the extrapolation. Either outcome is a result; neither is assumed.
 
 - **Full mutation operator set:** point substitution, insertion, deletion, segment
   duplication, inversion, and recombination. Duplication is included specifically
@@ -411,6 +447,9 @@ of higher level search. *J. Advanced Computational Intelligence and Intelligent
 Informatics.* *(Caveat: existence and title confirmed; volume and page numbers not yet
 verified. Do not cite with page numbers until checked.)*
 
+Eyre-Walker, A., Keightley, P. (2007). The distribution of fitness effects of new
+mutations. *Nature Reviews Genetics* 8:610-618.
+
 Ewert, W., Dembski, W., Marks, R. (2009). Evolutionary synthesis of nand logic:
 dissecting a digital organism. *Proc. IEEE Int. Conf. Systems, Man and Cybernetics*,
 San Antonio TX, 3047-3053.
@@ -426,6 +465,10 @@ large populations of digital organisms. *PLoS Comput. Biol.* 12(12):e1005066.
 
 Lenski, R., Ofria, C., Pennock, R., Adami, C. (2003). The evolutionary origin of
 complex features. *Nature* 423(6936):139-144.
+
+Nelson, C., Sanford, J. (2011). The effects of low-impact mutations in digital
+organisms. *Theoretical Biology & Medical Modelling* 8:9. (Rebuttal literature not yet
+checked; see note in Section 2.1.)
 
 Ohno, S. (1970). *Evolution by Gene Duplication.* Springer.
 
