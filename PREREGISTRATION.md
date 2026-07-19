@@ -1,8 +1,38 @@
 # Preregistration: Measuring the Rate at Which Mutation and Selection Generate Functional Information
 
-**Status:** DRAFT. Not yet in force.
+**Status:** ON HOLD. Not in force, not registered, and **known to contain a fatal defect**
+(see below). Retained as a record of the design discussion, not as a plan of work.
 **Author:** Robert Cronk
-**Finalized:** _(to be filled: date, git commit SHA, and public timestamp)_
+**Finalized:** never
+
+> ## Why this is on hold
+>
+> Two reasons, both recorded here rather than deleted.
+>
+> **1. It contains an arithmetic error that falsifies itself.** Functional information is
+> `I = -log₂(F)`, so sampling N genomes at random yields a best-found value of about
+> `log₂(N)` bits. At the Earth-scale figure this document uses, `R = 10⁴⁰`, that is
+> **~133 bits from random search alone**, which exceeds the 37 bit falsification
+> threshold in Section 9 by a wide margin. Loss condition 2 therefore triggers before any
+> simulator is written. Keefe & Szostak (2001) demonstrated this empirically: they found
+> 37-bit ATP-binding proteins by literally sampling random sequences in a test tube. Any
+> revival of this design must set thresholds above the random-search baseline, and should
+> target coordinated multi-part systems rather than a single protein fold.
+>
+> **2. It drifted away from the question it was meant to answer.** The author's question
+> is whether random change can build interdependent machinery. This document asks whether
+> the scaling exponent of an extreme-value statistic is logarithmic or power-law. Each
+> layer of methodology was added to survive an anticipated objection, and the cumulative
+> effect was a protocol optimized for peer review rather than for finding out the answer.
+>
+> **What survives and is still true.** The three defects it identified in the v1
+> experiments are real and any future work must fix them: there was no positive
+> selection, only pass/fail purifying selection; the mutation operator could neither
+> delete nor duplicate; and there was only ever one organism at a time. See
+> [`legacy/README.md`](legacy/README.md) sections A2 and A3.
+>
+> Current work is the legacy track: honest, runnable, reproducible experiments in what
+> code structures survive mutation and why.
 
 ---
 
