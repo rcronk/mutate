@@ -1,0 +1,30 @@
+--- multiple_functions.py	2026-07-18 19:01:03.769300002 -0400
++++ mutated_multiple_functions.py	2026-07-18 19:01:03.777300002 -0400
+@@ -1,3 +1,6 @@
++5318784
++61
++84641
+ import string
+ 
+ def count_words(text):
+@@ -7,11 +10,15 @@
+     return len([x for x in text if x in string.ascii_letters])
+ 
+ def count_spaces(text):
+-    return len([x for x in text if x == ' '])
++    return len([x for x
++ in text if x == ' '])
+ 
+ def get_stats(text):
+     stats = {}
+-    stats['words'] = count_words(text)
++    stats[
++'words'] = count_words(text)
+     stats['letters'] = count_letters(text)
+     stats['spaces'] = count_spaces(text)
+-    return stats
+\ No newline at end of file
++    return stats
++6j
++5433j
+\ No newline at end of file
