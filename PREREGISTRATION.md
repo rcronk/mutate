@@ -6,25 +6,16 @@
 
 ---
 
-## 0. What a preregistration is, and why this document exists
+## 0. Status and scope of this document
 
-A preregistration is a public, timestamped statement of exactly what an experiment will
-do and what result would prove the author wrong, written and published **before any
-data is collected.**
+Binding once finalized. Deviations are permitted but must be recorded in Section 11 with
+a timestamp and a reason, and reported in any publication.
 
-The problem it solves is not dishonesty. It is that everyone, unavoidably, finds it
-easier to see a result as confirming what they already believed. Given freedom to
-choose the analysis after seeing the data, a researcher can nearly always find a
-defensible path to their preferred conclusion without ever consciously cheating. Fixing
-the analysis in advance removes that freedom.
+The author holds, and has publicly stated, a strong prior belief about how this will come
+out. The value of any result produced here depends on this document preceding the data.
+Section 7 exists for the same reason.
 
-The author of this project holds, and has stated publicly, a strong prior belief that
-the answer will come out a particular way. That makes this document more necessary
-here than in the average study, not less. **The value of any result this project
-produces depends on this document being written first and adhered to afterward.**
-
-Everything below is binding once finalized. Deviations are permitted but must be
-recorded in Section 10 with a timestamp and a reason, and reported in any publication.
+Terms used here are defined in plain language in [`GLOSSARY.md`](GLOSSARY.md).
 
 ---
 
@@ -248,10 +239,18 @@ It is the single most important safeguard in this document.
 4. Extrapolate the better-fitting model to `R = 10⁴⁰` organism-generations, an
    order-of-magnitude standing estimate for the total number of cells that have ever
    lived on Earth, and report predicted `I_max` with 95% confidence intervals.
-5. Compare that prediction against reference scales for biological functional
-   information, reported as a **range** rather than a single figure, since the
-   underlying estimates are disputed: a single functional protein fold at
-   F = 10⁻¹¹ (Keefe & Szostak) is ≈ 37 bits; at F = 10⁻⁷⁷ (Axe) it is ≈ 256 bits.
+5. Invert the fitted curve and report, as a headline result, **the resources required to
+   reach each published estimate of the cost of one protein fold**, across the full
+   disputed range: F = 10⁻¹¹ (Keefe & Szostak 2001) is ≈ 37 bits, F = 10⁻⁷⁷ (Axe 2004)
+   is ≈ 256 bits, with intermediate published estimates included. Reported as a table of
+   required organism-generations, so a reader may apply whichever estimate they find
+   credible without the analysis having taken a side.
+
+   *Rationale: protein rarity is not a quantity this experiment measures. Building a
+   disputed external figure into the decision rule would import that dispute into this
+   result. It is reported as a consequence, not used as a criterion. The one exception
+   is the single threshold in Section 9, chosen deliberately as the value least
+   favorable to the author.*
 
 ---
 
@@ -293,13 +292,20 @@ at all. "Clearly better" means the margin is big enough that it is not a coin fl
 
 **Loss condition 2: the line reaches biology.**
 Plain: we take the fitted line, extend it out to the total resources Earth has ever had,
-and it predicts enough new machinery to build a working protein. Our uncertainty about
-that prediction has to be small enough that the author's much lower prediction falls
-outside it. If the extension reaches protein territory, the claim that this process
-cannot build biological machinery has failed on its own numbers.
-> Formally: extrapolation to R = 10⁴⁰ organism-generations predicts `I_max` above 256
-> bits, with the 95% confidence interval excluding H_log's prediction. The 256 bit
-> figure is one 150-residue protein fold on Axe's (2004) estimate of 1 in 10⁷⁷.
+and it predicts at least 37 bits of new machinery. That is one working protein on the
+most generous published estimate of how common working proteins are. If the extension
+reaches even that lowest bar, the claim that this process cannot build biological
+machinery has failed on its own numbers.
+> Formally: extrapolation to R = 10⁴⁰ organism-generations predicts `I_max` ≥ 37 bits,
+> with the 95% confidence interval excluding H_log's prediction. The 37 bit figure is one
+> protein on Keefe & Szostak's (2001) estimate of 1 in 10¹¹.
+
+> **Why 37 and not 256.** A single threshold is used in both directions so that there is
+> no band of outcomes in which neither side wins. The value chosen is the one least
+> favorable to the author: it is the easiest bar for evolution to clear, and therefore
+> the easiest way for the author to be proven wrong. Axe's 256 bit figure would have made
+> falsification roughly seven times harder to trigger. It is reported in Section 8 as a
+> result, but is not used as a criterion here.
 
 **Loss condition 3: something genuinely new shows up.**
 Plain: a capability appears that we never rewarded and never asked for, and when we
@@ -325,19 +331,16 @@ Winning is harder than not losing, and deliberately so. All of the following, to
   common working proteins are.
 
 > Formally: H_log favored by ΔBIC > 10 under unscaffolded selection, calibration gate
-> passed, and extrapolation to R = 10⁴⁰ predicting `I_max` below 37 bits with 95%
-> confidence. The 37 bit figure is Keefe & Szostak's (2001) estimate of 1 in 10¹¹,
-> chosen as the reference because it is the estimate least favorable to the author.
+> passed, and extrapolation to R = 10⁴⁰ predicting `I_max` < 37 bits with 95%
+> confidence.
+
+The same 37 bit threshold decides both directions, so every possible outcome resolves to
+a win, a loss, or an inconclusive fit, with no undecidable band in between.
 
 ### 9.4 A note on the asymmetry
 
-Losing takes one condition. Winning takes three, and one of them is proving the
-equipment works. The lower reference scale was deliberately set using the published
-estimate that makes the author's case hardest, not the one that makes it easiest.
-
-This is not modesty. An experiment that is easy for its author to win is not evidence,
-and a result obtained under a lenient standard is worth nothing to the people who most
-need convincing.
+Losing takes one condition. Winning takes three, and one of them is proving the equipment
+works. The threshold is the published estimate that makes the author's case hardest.
 
 Both sets of criteria were written at the same time, before any data existed.
 
