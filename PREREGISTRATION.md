@@ -40,29 +40,70 @@ that question has no measurable answer.
 
 ---
 
-## 2. Background and motivation
+## 2. Background: what is already established, and what is not
 
-Existing artificial-life results (Lenski et al. 2003; Ray 1991) demonstrate that novel
-functions can appear in digital evolution. Two things are missing from that literature:
+A literature audit was performed before finalizing this protocol. **Two novelty claims
+made in an earlier draft of this document were found to be false and are withdrawn
+below.** Recording that here rather than quietly deleting it is deliberate: a
+preregistration that hides its own corrections is worthless.
 
-1. **No measured scaling law.** Results are reported at a single scale. There is no
-   published curve showing how achievable functional information grows with resources,
-   and therefore no empirical basis for extrapolating these results to biological
-   scale, though such extrapolations are routinely made informally.
+### 2.1 Already established. Not claimed as novel here.
 
-2. **No accounting for experimenter-supplied information.** When a fitness function
-   rewards intermediate steps toward a target ("scaffolding"), some of the information
-   in the final result came from the experimenter's reward schedule rather than from
-   the evolutionary process. Nobody has quantified how much. Lenski et al.'s own
-   control (EQU evolved in 23 of 50 populations with scaffolding, and 0 of 50
-   without) suggests the contribution is large, but it has never been measured in bits.
+1. **Functional information has already been applied to digital organisms.** Hazen et
+   al. (2007), who introduced the metric this study uses, applied it to Avida directly,
+   measuring the distribution of function across randomly generated genomes and
+   describing the resulting landscape as "islands of solutions."
 
-There is a third gap this project is positioned to address. In biology, the key
-quantity (the fraction of sequences that are functional) can only be estimated by
-contested wet-lab proxies, with published estimates spanning from roughly 1 in 10¹¹
-(Keefe & Szostak 2001) to 1 in 10⁷⁷ (Axe 2004), sixty-six orders of magnitude,
-depending on method and target. **In a simulation this quantity can be computed
-exactly.** That is the central methodological advantage of this approach.
+2. **The information a fitness function contributes has been formalized and measured.**
+   Dembski & Marks (2009, 2010) developed "active information" specifically to quantify
+   how much problem-specific information a search is given, defined as how far the
+   search outperforms blind search. Ewert, Dembski & Marks (2009) applied it to Avida,
+   named the mechanism "stair step active information," and argued Avida's graded logic
+   rewards supply it. **An earlier draft of this document asserted that nobody had
+   quantified the scaffolding contribution. That assertion was false.**
+
+3. **Complexity has been measured against population size in digital evolution.** LaBar
+   & Adami (2016) swept population size from 10 to 10⁴ individuals over 2.5 × 10⁵
+   generations with 100 replicates. **An earlier draft asserted that no scaling study
+   existed. That assertion was too strong.** What that study did not do is measure
+   functional information (it counted phenotypic traits) or fit a scaling law; it
+   reported a non-monotonic pattern in which both small and large populations evolved
+   greater complexity than intermediate ones.
+
+4. **The claim that functional information increases under selection is live and
+   contested, not settled.** Wong et al. (2023) proposed a "law of increasing functional
+   information." Root-Bernstein (2024) published a critical response in PNAS, with a
+   reply from the original authors in the same issue.
+
+### 2.2 What remains open. This is where the project's contribution lies.
+
+- **No fitted scaling law for functional information against total resources.** LaBar &
+  Adami varied population size but measured trait counts and fitted no curve. Wong et
+  al. assert that functional information increases without specifying a rate. The
+  quantity `I_max(R)` has not been measured across orders of magnitude of
+  organism-generations and fitted to competing functional forms.
+
+- **Substrate tolerance has never been an independent variable.** Avida's instruction
+  set and its mutational robustness are fixed design decisions. Ray (1991) explicitly
+  designed the Tierran language because conventional machine languages were "too
+  brittle to evolve," which concedes the point that substrate tolerance is decisive,
+  but no study sweeps it and measures the consequence.
+
+- **Active information has not been swept systematically.** It has been computed for
+  particular Avida configurations, not varied as a controlled axis against substrate
+  tolerance and resources simultaneously.
+
+- **No published extrapolation** of a measured digital-evolution scaling law to
+  biological resource scale with stated confidence intervals.
+
+### 2.3 The methodological advantage
+
+In biology, the fraction of sequences that are functional can only be estimated by
+contested wet-lab proxies. Published estimates span roughly 1 in 10¹¹ (Keefe & Szostak
+2001, from a random 80-mer library) to 1 in 10⁷⁷ (Axe 2004, for a 150-residue enzyme
+fold), which is sixty-six orders of magnitude of disagreement driven by method and
+target. **In a simulation this quantity can be computed exactly.** That is the central
+methodological advantage of this approach and the reason for doing it in silico.
 
 ---
 
@@ -283,21 +324,57 @@ empty log on a long project is itself suspicious.
 
 ## References
 
+Citations below were checked against the primary source or its indexed record on
+2026-07-19: titles, journals, volumes, page ranges, and the specific numerical claims
+attributed to each. Two items carry an explicit caveat where verification was
+incomplete. Anything not yet verified says so rather than appearing verified.
+
 Axe, D. (2004). Estimating the prevalence of protein sequences adopting functional
-folds. *J. Mol. Biol.* 341:1295-1315.
+enzyme folds. *J. Mol. Biol.* 341:1295-1315.
+
+Dembski, W., Marks, R. (2009). Conservation of information in search: measuring the
+cost of success. *IEEE Trans. Systems, Man and Cybernetics A* 39(5):1051-1061.
+*(Caveat: pages and issue confirmed; the authors' own publication page lists the volume
+as 5, which appears to be an error, since IEEE Trans. SMC-A was at volume 39 in 2009.
+Confirm the volume against IEEE Xplore before citing in a manuscript.)*
+
+Dembski, W., Marks, R. (2010). The search for a search: measuring the information cost
+of higher level search. *J. Advanced Computational Intelligence and Intelligent
+Informatics.* *(Caveat: existence and title confirmed; volume and page numbers not yet
+verified. Do not cite with page numbers until checked.)*
+
+Ewert, W., Dembski, W., Marks, R. (2009). Evolutionary synthesis of nand logic:
+dissecting a digital organism. *Proc. IEEE Int. Conf. Systems, Man and Cybernetics*,
+San Antonio TX, 3047-3053.
 
 Hazen, R., Griffin, P., Carothers, J., Szostak, J. (2007). Functional information and
-the emergence of biocomplexity. *PNAS* 104:8574-8581.
+the emergence of biocomplexity. *PNAS* 104(suppl. 1):8574-8581.
 
 Keefe, A., Szostak, J. (2001). Functional proteins from a random-sequence library.
 *Nature* 410:715-718.
 
+LaBar, T., Adami, C. (2016). Different evolutionary paths to complexity for small and
+large populations of digital organisms. *PLoS Comput. Biol.* 12(12):e1005066.
+
 Lenski, R., Ofria, C., Pennock, R., Adami, C. (2003). The evolutionary origin of
-complex features. *Nature* 423:139-144.
+complex features. *Nature* 423(6936):139-144.
 
 Ohno, S. (1970). *Evolution by Gene Duplication.* Springer.
 
-Ray, T. (1991). An approach to the synthesis of life. *Artificial Life II*, 371-408.
+Ray, T. (1991). An approach to the synthesis of life. In *Artificial Life II*, Santa Fe
+Institute Studies in the Sciences of Complexity vol. X, Addison-Wesley, 371-408.
 
-Trifonov, E. (1989). Multiple codes of nucleotide sequences. *Bull. Math. Biol.*
+Root-Bernstein, M. (2024). Evolution is not driven by and toward increasing information
+and complexity. *PNAS* 121(34):e2318689121.
+
+Shen, X., Song, S., Li, C., Zhang, J. (2022). Synonymous mutations in representative
+yeast genes are mostly strongly non-neutral. *Nature* 606(7915):725-731. (Contested:
+Kruglyak et al. published "Insufficient evidence for non-neutrality of synonymous
+mutations" in *Nature* 2023; the original authors responded in *Mol. Biol. Evol.*
+41:msae224, 2024. The debate is unresolved and should be presented as such.)
+
+Trifonov, E. (1989). The multiple codes of nucleotide sequences. *Bull. Math. Biol.*
 51:417-432.
+
+Wong, M., et al. (2023). On the roles of function and selection in evolving systems.
+*PNAS* 120(43):e2310223120.
