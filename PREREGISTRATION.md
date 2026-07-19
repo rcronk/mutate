@@ -257,24 +257,89 @@ It is the single most important safeguard in this document.
 
 ## 9. Falsification criteria
 
-**The author's hypothesis (H_log) is falsified if:**
+### 9.1 What is being bet on, in plain language
 
-- H_pow is decisively favored (ΔBIC > 10) in a majority of design-grid cells under
-  **unscaffolded** selection; **or**
-- Extrapolation of the fitted curve to R = 10⁴⁰ predicts `I_max` exceeding 256 bits
-  with the 95% confidence interval excluding H_log's prediction; **or**
-- Any novel function with coordination degree ≥ 3 appears under unscaffolded selection,
-  detected by held-out tests, in ≥ 5 of 30 replicates.
+We are going to run the same experiment at many different sizes, from very small to as
+large as we can afford. At each size we measure how much new working machinery the
+process managed to build. Then we plot those measurements and see what shape the line
+makes.
 
-**The mainstream-consistent alternative (H_pow) is disfavored if:**
+**The author is betting the line flattens out.** Each time you double the resources you
+get the same small fixed amount of additional machinery, so the line rises but keeps
+bending toward horizontal. If that is the shape, then no amount of extra time or
+population ever gets you very far, because you are always paying double for the same
+small gain.
 
-- H_log is decisively favored (ΔBIC > 10) under unscaffolded selection **and** the
-  calibration gate was passed; **and**
-- Extrapolation to R = 10⁴⁰ predicts `I_max` below the lower reference scale (37 bits)
-  with 95% confidence.
+**The opposing bet is that the line keeps climbing.** Not necessarily steeply, but
+enough that doubling the resources keeps buying meaningful new capability. If that is
+the shape, then a very large amount of time and a very large population genuinely could
+build something complicated.
 
-Both criteria are symmetric in form and were written at the same time, before any data
-existed.
+We fit both shapes to the same measurements and see which one matches. Then we extend
+the winning line out to the amount of resources the Earth has actually had, and see what
+it predicts.
+
+### 9.2 Three ways the author loses
+
+Any single one of these means the hypothesis is wrong. Not two out of three. Any one.
+
+**Loss condition 1: the climbing line fits better.**
+Plain: when we plot the measurements and try both shapes on them, the climbing line
+matches the data clearly better than the flattening line, and it does so in more than
+half of the settings we test, in the runs where the fitness function is giving no hints
+at all. "Clearly better" means the margin is big enough that it is not a coin flip.
+> Formally: H_pow favored over H_log by ΔBIC > 10 in a majority of design-grid cells
+> under unscaffolded selection.
+
+**Loss condition 2: the line reaches biology.**
+Plain: we take the fitted line, extend it out to the total resources Earth has ever had,
+and it predicts enough new machinery to build a working protein. Our uncertainty about
+that prediction has to be small enough that the author's much lower prediction falls
+outside it. If the extension reaches protein territory, the claim that this process
+cannot build biological machinery has failed on its own numbers.
+> Formally: extrapolation to R = 10⁴⁰ organism-generations predicts `I_max` above 256
+> bits, with the 95% confidence interval excluding H_log's prediction. The 256 bit
+> figure is one 150-residue protein fold on Axe's (2004) estimate of 1 in 10⁷⁷.
+
+**Loss condition 3: something genuinely new shows up.**
+Plain: a capability appears that we never rewarded and never asked for, and when we
+trace back how it was built we find it required at least three separate changes that
+were useless or actively harmful at the moment they happened. And it happens in at least
+5 of 30 independent runs, so it is not a one-off fluke. That is the thing the author says
+cannot happen: a multi-step structure assembled through steps that were not individually
+paying their way.
+> Formally: a novel function with coordination degree ≥ 3 under unscaffolded selection,
+> detected by held-out tests, in ≥ 5 of 30 replicates.
+
+### 9.3 What it takes for the author to win
+
+Winning is harder than not losing, and deliberately so. All of the following, together:
+
+- The flattening line fits clearly better than the climbing line, in the runs with no
+  hints from the fitness function.
+- The calibration gate (Section 7) was passed, proving the equipment was capable of
+  producing complexity when complexity was there to be found. Without this, a flat line
+  only demonstrates a broken simulator.
+- Extending the fitted line out to Earth's total resources predicts less than a single
+  protein's worth of machinery, even on the most generous published estimate of how
+  common working proteins are.
+
+> Formally: H_log favored by ΔBIC > 10 under unscaffolded selection, calibration gate
+> passed, and extrapolation to R = 10⁴⁰ predicting `I_max` below 37 bits with 95%
+> confidence. The 37 bit figure is Keefe & Szostak's (2001) estimate of 1 in 10¹¹,
+> chosen as the reference because it is the estimate least favorable to the author.
+
+### 9.4 A note on the asymmetry
+
+Losing takes one condition. Winning takes three, and one of them is proving the
+equipment works. The lower reference scale was deliberately set using the published
+estimate that makes the author's case hardest, not the one that makes it easiest.
+
+This is not modesty. An experiment that is easy for its author to win is not evidence,
+and a result obtained under a lenient standard is worth nothing to the people who most
+need convincing.
+
+Both sets of criteria were written at the same time, before any data existed.
 
 ---
 
