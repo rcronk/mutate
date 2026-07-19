@@ -1,0 +1,521 @@
+# Preregistration: Measuring the Rate at Which Mutation and Selection Generate Functional Information
+
+**Status:** ON HOLD. Not in force, not registered, and **known to contain a fatal defect**
+(see below). Retained as a record of the design discussion, not as a plan of work.
+**Author:** Robert Cronk
+**Finalized:** never
+
+> ## Why this is on hold
+>
+> Two reasons, both recorded here rather than deleted.
+>
+> **1. It contains an arithmetic error that falsifies itself.** Functional information is
+> `I = -log₂(F)`, so sampling N genomes at random yields a best-found value of about
+> `log₂(N)` bits. At the Earth-scale figure this document uses, `R = 10⁴⁰`, that is
+> **~133 bits from random search alone**, which exceeds the 37 bit falsification
+> threshold in Section 9 by a wide margin. Loss condition 2 therefore triggers before any
+> simulator is written. Keefe & Szostak (2001) demonstrated this empirically: they found
+> 37-bit ATP-binding proteins by literally sampling random sequences in a test tube. Any
+> revival of this design must set thresholds above the random-search baseline, and should
+> target coordinated multi-part systems rather than a single protein fold.
+>
+> **2. It drifted away from the question it was meant to answer.** The author's question
+> is whether random change can build interdependent machinery. This document asks whether
+> the scaling exponent of an extreme-value statistic is logarithmic or power-law. Each
+> layer of methodology was added to survive an anticipated objection, and the cumulative
+> effect was a protocol optimized for peer review rather than for finding out the answer.
+>
+> **What survives and is still true.** The three defects it identified in the v1
+> experiments are real and any future work must fix them: there was no positive
+> selection, only pass/fail purifying selection; the mutation operator could neither
+> delete nor duplicate; and there was only ever one organism at a time. See
+> [`legacy/README.md`](legacy/README.md) sections A2 and A3.
+>
+> Current work is the legacy track: honest, runnable, reproducible experiments in what
+> code structures survive mutation and why.
+
+---
+
+## 0. Status and scope of this document
+
+Binding once finalized. Deviations are permitted but must be recorded in Section 11 with
+a timestamp and a reason, and reported in any publication.
+
+The author holds, and has publicly stated, a strong prior belief about how this will come
+out. The value of any result produced here depends on this document preceding the data.
+Section 7 exists for the same reason.
+
+Terms used here are defined in plain language in [`GLOSSARY.md`](GLOSSARY.md).
+
+---
+
+## 1. The question
+
+When code is copied with random errors, and non-working copies are discarded, how much
+*new functional information* accumulates, and how does that amount grow as more
+computational resources are spent?
+
+This is a question about a **rate**, and therefore about the shape of a curve. It is
+deliberately not the question "can evolution produce complexity, yes or no," because
+that question has no measurable answer.
+
+---
+
+## 2. Background: what is already established, and what is not
+
+A literature audit was performed before finalizing this protocol. **Two novelty claims
+made in an earlier draft of this document were found to be false and are withdrawn
+below.** Recording that here rather than quietly deleting it is deliberate: a
+preregistration that hides its own corrections is worthless.
+
+### 2.1 Already established. Not claimed as novel here.
+
+1. **Functional information has already been applied to digital organisms.** Hazen et
+   al. (2007), who introduced the metric this study uses, applied it to Avida directly,
+   measuring the distribution of function across randomly generated genomes and
+   describing the resulting landscape as "islands of solutions."
+
+2. **The information a fitness function contributes has been formalized and measured.**
+   Dembski & Marks (2009, 2010) developed "active information" specifically to quantify
+   how much problem-specific information a search is given, defined as how far the
+   search outperforms blind search. Ewert, Dembski & Marks (2009) applied it to Avida,
+   named the mechanism "stair step active information," and argued Avida's graded logic
+   rewards supply it. **An earlier draft of this document asserted that nobody had
+   quantified the scaffolding contribution. That assertion was false.**
+
+3. **Complexity has been measured against population size in digital evolution.** LaBar
+   & Adami (2016) swept population size from 10 to 10⁴ individuals over 2.5 × 10⁵
+   generations with 100 replicates. **An earlier draft asserted that no scaling study
+   existed. That assertion was too strong.** What that study did not do is measure
+   functional information (it counted phenotypic traits) or fit a scaling law; it
+   reported a non-monotonic pattern in which both small and large populations evolved
+   greater complexity than intermediate ones.
+
+4. **The claim that functional information increases under selection is live and
+   contested, not settled.** Wong et al. (2023) proposed a "law of increasing functional
+   information." Root-Bernstein (2024) published a critical response in PNAS, with a
+   reply from the original authors in the same issue.
+
+5. **Avida's results have already been shown to depend on unrealistically large
+   selection coefficients.** Nelson & Sanford (2011) varied mutational fitness effects in
+   Avida and reported that at effects of roughly 0.075 or below, no new logic operations
+   evolved and previously evolved ones were lost; at 0.2, half evolved; under Avida's
+   defaults, all evolved routinely. They note that selection coefficients of 0.01 to 0.1
+   are already considered large in real biological systems. **This project does not claim
+   novelty for the observation that fitness-effect magnitude matters.** What is added
+   here is varying the structure of the genotype-phenotype map rather than reward
+   magnitudes, measuring functional information in bits, fitting a scaling law, and
+   extrapolating with confidence intervals.
+
+   *Note for the manuscript: this paper's rebuttal literature has not yet been checked,
+   and the author affiliation carries the same reception risk noted for Dembski & Marks.
+   Cite for its measurement, verify the response literature before relying on it.*
+
+### 2.2 What remains open. This is where the project's contribution lies.
+
+- **No fitted scaling law for functional information against total resources.** LaBar &
+  Adami varied population size but measured trait counts and fitted no curve. Wong et
+  al. assert that functional information increases without specifying a rate. The
+  quantity `I_max(R)` has not been measured across orders of magnitude of
+  organism-generations and fitted to competing functional forms.
+
+- **Substrate tolerance has never been an independent variable.** Avida's instruction
+  set and its mutational robustness are fixed design decisions. Ray (1991) explicitly
+  designed the Tierran language because conventional machine languages were "too
+  brittle to evolve," which concedes the point that substrate tolerance is decisive,
+  but no study sweeps it and measures the consequence.
+
+- **Active information has not been swept systematically.** It has been computed for
+  particular Avida configurations, not varied as a controlled axis against substrate
+  tolerance and resources simultaneously.
+
+- **No published extrapolation** of a measured digital-evolution scaling law to
+  biological resource scale with stated confidence intervals.
+
+### 2.3 The methodological advantage
+
+In biology, the fraction of sequences that are functional can only be estimated by
+contested wet-lab proxies. Published estimates span roughly 1 in 10¹¹ (Keefe & Szostak
+2001, from a random 80-mer library) to 1 in 10⁷⁷ (Axe 2004, for a 150-residue enzyme
+fold), which is sixty-six orders of magnitude of disagreement driven by method and
+target. **In a simulation this quantity can be computed exactly.** That is the central
+methodological advantage of this approach and the reason for doing it in silico.
+
+---
+
+## 3. The measurement
+
+The dependent variable throughout is **functional information**, after Hazen, Griffin,
+Carothers & Szostak (*PNAS*, 2007):
+
+```
+I(Eₓ) = -log₂( F(Eₓ) )
+```
+
+where `F(Eₓ)` is the fraction of all possible genomes of a given length that achieve at
+least degree `Eₓ` of the specified function. Units: bits.
+
+`F` will be computed **exactly by exhaustive enumeration** at genome lengths where the
+sequence space is small enough to enumerate, and by Monte Carlo sampling with reported
+confidence intervals above that. The crossover point and the sampling procedure are
+fixed in the protocol before runs begin.
+
+The primary quantity reported is `I_max(R)`: the highest functional information
+observed in any lineage, as a function of `R`, the total resources expended, measured
+in organism-generations (population size × generations).
+
+A secondary quantity is **coordination degree**: for any novel function that appears,
+the number of mutations on its lineage that were not individually beneficial at the
+time they occurred and are individually required for the function. Measured by lineage
+replay and single-mutation knockout.
+
+---
+
+## 4. Hypotheses
+
+Stated as competing models for `I_max(R)`, to be distinguished by fitting both to the
+same data.
+
+**H_log (the author's hypothesis).** Achievable functional information grows
+logarithmically in resources:
+
+```
+I_max(R) = a · log(R) + b
+```
+
+Rationale: the number of sequences of length L grows exponentially with L, so the
+fraction that are functional decays exponentially. If selection provides no substantial
+advantage over undirected search, the attainable information grows only as the
+logarithm of the resources spent. Under this model, doubling all the resources in the
+experiment adds a small constant number of bits, and no achievable increase in
+resources closes a large gap.
+
+Informally: rolling more Scrabble dice for longer finds you four-letter words instead
+of three-letter words. It does not find you a novel.
+
+**H_pow (the mainstream-consistent alternative).** Cumulative selection substantially
+outperforms undirected search, and achievable information grows as a power law:
+
+```
+I_max(R) = c · R^k    (k > 0)
+```
+
+Under this model, increasing resources continues to buy meaningful increments of
+functional information, and extrapolation to biological scale is defensible.
+
+These models make opposite predictions about what happens when the experiment is scaled
+up, and they are distinguishable with modest compute.
+
+---
+
+## 5. Substrate
+
+A virtual machine executing digital organisms in a single process. Design requirements,
+fixed in advance:
+
+- **No syntax errors.** Every possible instruction sequence is executable. A mutation
+  changes what a program does, never whether it runs. (Rationale: Python source text
+  makes most single-character mutations immediately lethal, which is a property of
+  Python's grammar rather than a finding about evolution.)
+
+- **Two-level translation.** Genome bits → codons → instructions, mirroring
+  DNA → RNA → protein.
+
+- **Tunable codon redundancy.** How many codons map to the same instruction is an
+  experimental parameter, not a fixed assumption. This makes the substrate's tolerance
+  for mutation an independent variable rather than a design decision to be argued over.
+
+- **The sweep range is calibrated to measured biology, not chosen.** The redundancy axis
+  is set so that the resulting **distribution of fitness effects** of random point
+  mutations spans the range measured in real organisms (Eyre-Walker & Keightley 2007),
+  covering the proportions of lethal, deleterious, effectively neutral, and beneficial
+  mutations reported for bacteria, yeast, viruses, and Drosophila. The DFE of each
+  substrate setting is measured and reported alongside every result.
+
+  *Rationale: "we swept redundancy across a range that seemed reasonable" is not
+  defensible. Anchoring the range to a measured biological quantity converts the
+  substrate from an arbitrary choice into an empirical calibration, and is the primary
+  answer to the objection that results in a designed substrate do not transfer. Prior
+  work bears directly on this: Nelson & Sanford (2011) found that reducing Avida's
+  mutational fitness effects toward biologically measured magnitudes eliminated the
+  evolution of complex logic operations entirely.*
+
+- **Multiple structurally distinct substrate families.** At minimum a codon-translation
+  machine and a template-addressing machine in the style of Tierra (Ray 1991), run at
+  matched DFE. Agreement of the fitted scaling exponent across architecturally unrelated
+  substrates is empirical support for portability. Divergence is reported as a
+  sensitivity bound on the extrapolation. Either outcome is a result; neither is assumed.
+
+- **Full mutation operator set:** point substitution, insertion, deletion, segment
+  duplication, inversion, and recombination. Duplication is included specifically
+  because it is the mainstream proposed mechanism for the origin of new genes (Ohno
+  1970); omitting it and then reporting that novelty does not arise would be circular.
+
+Every run is seeded and exactly reproducible. Full phylogeny and all genomes are
+retained for lineage analysis.
+
+---
+
+## 6. Experimental design
+
+**Task.** Self-replication is required for persistence. Organisms that cannot
+copy themselves leave no descendants. Layered on top is a formal-language production task
+whose `F` is computable in closed form, providing a difficulty dial that tunes smoothly
+across many orders of magnitude.
+
+**Three swept axes:**
+
+| Axis | Range | Purpose |
+|---|---|---|
+| Resources `R` | ≥ 6 orders of magnitude of organism-generations | The scaling law itself |
+| Codon redundancy | none → 64:20 → overlapping frames | How much substrate tolerance matters |
+| Fitness scaffolding | none → graded → full task rewards | How much information the experimenter supplies |
+
+**Replicates:** n ≥ 30 independent seeded runs per cell of the design grid.
+
+**Controls:**
+- *Drift-only:* mutation with no selection. Baseline for how much functional
+  information accumulates by chance alone. Any reported signal must exceed this.
+- *Undirected search:* random genome sampling at matched resource cost. This is the
+  comparison that decides H_log versus H_pow. Selection must beat it, and by how
+  much is the entire result.
+
+---
+
+## 7. Calibration gate (mandatory, blocking)
+
+Before any headline experiment is run, the simulator must reproduce a known published
+positive result: the evolution of EQU under scaffolded rewards, at a rate statistically
+consistent with Lenski et al. (2003).
+
+**If this gate is not passed, no negative result from this project will be reported as
+evidence about evolution.** A system that cannot produce complexity when complexity is
+known to be producible has demonstrated a broken instrument, not a fact about nature.
+
+This gate exists specifically to protect the project from its author's stated prior.
+It is the single most important safeguard in this document.
+
+---
+
+## 8. Analysis plan (fixed in advance)
+
+1. Fit both H_log and H_pow to `I_max(R)` by maximum likelihood.
+2. Compare models by BIC. **Decision rule: ΔBIC > 10 constitutes decisive support.**
+3. Report the fit for every cell of the design grid, not only the favorable ones.
+4. Extrapolate the better-fitting model to `R = 10⁴⁰` organism-generations, an
+   order-of-magnitude standing estimate for the total number of cells that have ever
+   lived on Earth, and report predicted `I_max` with 95% confidence intervals.
+5. Invert the fitted curve and report, as a headline result, **the resources required to
+   reach each published estimate of the cost of one protein fold**, across the full
+   disputed range: F = 10⁻¹¹ (Keefe & Szostak 2001) is ≈ 37 bits, F = 10⁻⁷⁷ (Axe 2004)
+   is ≈ 256 bits, with intermediate published estimates included. Reported as a table of
+   required organism-generations, so a reader may apply whichever estimate they find
+   credible without the analysis having taken a side.
+
+   *Rationale: protein rarity is not a quantity this experiment measures. Building a
+   disputed external figure into the decision rule would import that dispute into this
+   result. It is reported as a consequence, not used as a criterion. The one exception
+   is the single threshold in Section 9, chosen deliberately as the value least
+   favorable to the author.*
+
+---
+
+## 9. Falsification criteria
+
+### 9.1 What is being bet on, in plain language
+
+We are going to run the same experiment at many different sizes, from very small to as
+large as we can afford. At each size we measure how much new working machinery the
+process managed to build. Then we plot those measurements and see what shape the line
+makes.
+
+**The author is betting the line flattens out.** Each time you double the resources you
+get the same small fixed amount of additional machinery, so the line rises but keeps
+bending toward horizontal. If that is the shape, then no amount of extra time or
+population ever gets you very far, because you are always paying double for the same
+small gain.
+
+**The opposing bet is that the line keeps climbing.** Not necessarily steeply, but
+enough that doubling the resources keeps buying meaningful new capability. If that is
+the shape, then a very large amount of time and a very large population genuinely could
+build something complicated.
+
+We fit both shapes to the same measurements and see which one matches. Then we extend
+the winning line out to the amount of resources the Earth has actually had, and see what
+it predicts.
+
+### 9.2 Three ways the author loses
+
+Any single one of these means the hypothesis is wrong. Not two out of three. Any one.
+
+**Loss condition 1: the climbing line fits better.**
+Plain: when we plot the measurements and try both shapes on them, the climbing line
+matches the data clearly better than the flattening line, and it does so in more than
+half of the settings we test, in the runs where the fitness function is giving no hints
+at all. "Clearly better" means the margin is big enough that it is not a coin flip.
+> Formally: H_pow favored over H_log by ΔBIC > 10 in a majority of design-grid cells
+> under unscaffolded selection.
+
+**Loss condition 2: the line reaches biology.**
+Plain: we take the fitted line, extend it out to the total resources Earth has ever had,
+and it predicts at least 37 bits of new machinery. That is one working protein on the
+most generous published estimate of how common working proteins are. If the extension
+reaches even that lowest bar, the claim that this process cannot build biological
+machinery has failed on its own numbers.
+> Formally: extrapolation to R = 10⁴⁰ organism-generations predicts `I_max` ≥ 37 bits,
+> with the 95% confidence interval excluding H_log's prediction. The 37 bit figure is one
+> protein on Keefe & Szostak's (2001) estimate of 1 in 10¹¹.
+
+> **Why 37 and not 256.** A single threshold is used in both directions so that there is
+> no band of outcomes in which neither side wins. The value chosen is the one least
+> favorable to the author: it is the easiest bar for evolution to clear, and therefore
+> the easiest way for the author to be proven wrong. Axe's 256 bit figure would have made
+> falsification roughly seven times harder to trigger. It is reported in Section 8 as a
+> result, but is not used as a criterion here.
+
+**Loss condition 3: something genuinely new shows up.**
+Plain: a capability appears that we never rewarded and never asked for, and when we
+trace back how it was built we find it required at least three separate changes that
+were useless or actively harmful at the moment they happened. And it happens in at least
+5 of 30 independent runs, so it is not a one-off fluke. That is the thing the author says
+cannot happen: a multi-step structure assembled through steps that were not individually
+paying their way.
+> Formally: a novel function with coordination degree ≥ 3 under unscaffolded selection,
+> detected by held-out tests, in ≥ 5 of 30 replicates.
+
+### 9.3 What it takes for the author to win
+
+Winning is harder than not losing, and deliberately so. All of the following, together:
+
+- The flattening line fits clearly better than the climbing line, in the runs with no
+  hints from the fitness function.
+- The calibration gate (Section 7) was passed, proving the equipment was capable of
+  producing complexity when complexity was there to be found. Without this, a flat line
+  only demonstrates a broken simulator.
+- Extending the fitted line out to Earth's total resources predicts less than a single
+  protein's worth of machinery, even on the most generous published estimate of how
+  common working proteins are.
+
+> Formally: H_log favored by ΔBIC > 10 under unscaffolded selection, calibration gate
+> passed, and extrapolation to R = 10⁴⁰ predicting `I_max` < 37 bits with 95%
+> confidence.
+
+The same 37 bit threshold decides both directions, so every possible outcome resolves to
+a win, a loss, or an inconclusive fit, with no undecidable band in between.
+
+### 9.4 A note on the asymmetry
+
+Losing takes one condition. Winning takes three, and one of them is proving the equipment
+works. The threshold is the published estimate that makes the author's case hardest.
+
+Both sets of criteria were written at the same time, before any data existed.
+
+---
+
+## 10. Scope: what this project can and cannot establish
+
+Written in advance so that the limits are on the record rather than negotiated after
+the results are in.
+
+**This project can establish:**
+- A measured scaling law for functional information under mutation and selection in a
+  defined substrate, with substrate tolerance swept as a parameter. Not previously
+  published.
+- A quantification, in bits, of how much functional information an experimental setup
+  contributes through fitness scaffolding versus how much the evolutionary process
+  generates. This makes a long-standing methodological criticism measurable.
+- An exact value for `F` in a system where it is computable, against which the disputed
+  biological estimates can be calibrated.
+- A measured threshold for how much structure must exist in a state space before
+  self-replication becomes findable within a given resource budget.
+
+**This project cannot establish:**
+- That biological evolution did not occur. A simulation is not chemistry, and any
+  negative result is answerable with the objection that the substrate is
+  unrepresentative. **This objection is valid, and it is the same objection this
+  project levels at extrapolations from Avida. It applies symmetrically and will
+  be stated as such in any publication.**
+- That the origin of biological information required a mind. Functional information
+  measures the rarity of working arrangements. It says nothing about meaning,
+  reference, or intent, and no measurement in this project bears on those questions.
+- Anything about evolutionary theory's other evidential bases: fossil succession,
+  nested genetic hierarchies, biogeography, or directly observed speciation, none of
+  which this experiment touches.
+
+---
+
+## 11. Amendments
+
+Any deviation from this document after finalization is recorded here with date,
+rationale, and git commit SHA. An amendment log with entries is normal and honest; an
+empty log on a long project is itself suspicious.
+
+| Date | Section | Change | Rationale |
+|---|---|---|---|
+| *(no amendments yet)* | | | |
+
+---
+
+## References
+
+Citations below were checked against the primary source or its indexed record on
+2026-07-19: titles, journals, volumes, page ranges, and the specific numerical claims
+attributed to each. Two items carry an explicit caveat where verification was
+incomplete. Anything not yet verified says so rather than appearing verified.
+
+Axe, D. (2004). Estimating the prevalence of protein sequences adopting functional
+enzyme folds. *J. Mol. Biol.* 341:1295-1315.
+
+Dembski, W., Marks, R. (2009). Conservation of information in search: measuring the
+cost of success. *IEEE Trans. Systems, Man and Cybernetics A* 39(5):1051-1061.
+*(Caveat: pages and issue confirmed; the authors' own publication page lists the volume
+as 5, which appears to be an error, since IEEE Trans. SMC-A was at volume 39 in 2009.
+Confirm the volume against IEEE Xplore before citing in a manuscript.)*
+
+Dembski, W., Marks, R. (2010). The search for a search: measuring the information cost
+of higher level search. *J. Advanced Computational Intelligence and Intelligent
+Informatics.* *(Caveat: existence and title confirmed; volume and page numbers not yet
+verified. Do not cite with page numbers until checked.)*
+
+Eyre-Walker, A., Keightley, P. (2007). The distribution of fitness effects of new
+mutations. *Nature Reviews Genetics* 8:610-618.
+
+Ewert, W., Dembski, W., Marks, R. (2009). Evolutionary synthesis of nand logic:
+dissecting a digital organism. *Proc. IEEE Int. Conf. Systems, Man and Cybernetics*,
+San Antonio TX, 3047-3053.
+
+Hazen, R., Griffin, P., Carothers, J., Szostak, J. (2007). Functional information and
+the emergence of biocomplexity. *PNAS* 104(suppl. 1):8574-8581.
+
+Keefe, A., Szostak, J. (2001). Functional proteins from a random-sequence library.
+*Nature* 410:715-718.
+
+LaBar, T., Adami, C. (2016). Different evolutionary paths to complexity for small and
+large populations of digital organisms. *PLoS Comput. Biol.* 12(12):e1005066.
+
+Lenski, R., Ofria, C., Pennock, R., Adami, C. (2003). The evolutionary origin of
+complex features. *Nature* 423(6936):139-144.
+
+Nelson, C., Sanford, J. (2011). The effects of low-impact mutations in digital
+organisms. *Theoretical Biology & Medical Modelling* 8:9. (Rebuttal literature not yet
+checked; see note in Section 2.1.)
+
+Ohno, S. (1970). *Evolution by Gene Duplication.* Springer.
+
+Ray, T. (1991). An approach to the synthesis of life. In *Artificial Life II*, Santa Fe
+Institute Studies in the Sciences of Complexity vol. X, Addison-Wesley, 371-408.
+
+Root-Bernstein, M. (2024). Evolution is not driven by and toward increasing information
+and complexity. *PNAS* 121(34):e2318689121.
+
+Shen, X., Song, S., Li, C., Zhang, J. (2022). Synonymous mutations in representative
+yeast genes are mostly strongly non-neutral. *Nature* 606(7915):725-731. (Contested:
+Kruglyak et al. published "Insufficient evidence for non-neutrality of synonymous
+mutations" in *Nature* 2023; the original authors responded in *Mol. Biol. Evol.*
+41:msae224, 2024. The debate is unresolved and should be presented as such.)
+
+Trifonov, E. (1989). The multiple codes of nucleotide sequences. *Bull. Math. Biol.*
+51:417-432.
+
+Wong, M., et al. (2023). On the roles of function and selection in evolving systems.
+*PNAS* 120(43):e2310223120.
