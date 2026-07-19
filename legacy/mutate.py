@@ -1,28 +1,28 @@
 """ mutate.py - a mutation algorithm. """
 
-from __future__ import print_function
-
 import argparse
+import importlib.util
 import os
 import random
 import string
 import subprocess
+import sys
 import time
 import zipfile
-import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-class Creature(object):
+class Creature:
     """ This is a creature that can duplicate itself with errors. """
     def __init__(self, path_to_creature):
         assert os.path.sep not in path_to_creature
         self.path_to_creature = path_to_creature
-        self.test_path = 'test_%s' % self.path_to_creature
-        self.mutant_path = 'mutated_%s' % self.path_to_creature
+        self.test_path = f'test_{self.path_to_creature}'
+        self.mutant_path = f'mutated_{self.path_to_creature}'
 
-        creature_file = open(self.path_to_creature)
-        self.creature_content = creature_file.read()
-        creature_file.close()
+        with open(self.path_to_creature, encoding='utf-8') as creature_file:
+            self.creature_content = creature_file.read()
 
     @staticmethod
     def _weighted_choice(choices):
@@ -38,6 +38,9 @@ class Creature(object):
             if upto + weight >= rand_num:
                 return choice
             upto += weight
+        # Floating point rounding can leave rand_num fractionally above the
+        # accumulated total, which previously fell off the end and returned None.
+        return choices[-1][0]
 
     @staticmethod
     def _flawed_copy(source, mutation_weights=None, use_keywords=True):
@@ -81,7 +84,7 @@ class Creature(object):
                 else:
                     source = source[:mutation_location] + mutation + source[mutation_location:]
             else:
-                raise 'Invalid defect: %s' % defect
+                raise ValueError(f'Invalid defect: {defect}')
         return source
 
     def save_mutant(self, creature_content):
@@ -89,10 +92,12 @@ class Creature(object):
         :param creature_content: Text of file to be saved.
         :return: None
         """
-        mutant_path_handle = open(self.mutant_path, 'w')
-        mutant_path_handle.write(creature_content)
-        mutant_path_handle.close()
-        pyc_file = '__pycache__\\%s.cpython-35.pyc' % os.path.splitext(self.mutant_path)[0]
+        with open(self.mutant_path, 'w', encoding='utf-8') as mutant_path_handle:
+            mutant_path_handle.write(creature_content)
+        # Stale bytecode would otherwise be reused, so the mutant that runs would
+        # not be the mutant just written. The original hardcoded a Windows path
+        # for Python 3.5, which silently did nothing on any other platform.
+        pyc_file = importlib.util.cache_from_source(self.mutant_path)
         if os.path.exists(pyc_file):
             os.unlink(pyc_file)
 
@@ -117,14 +122,14 @@ class Creature(object):
         self.save_mutant(self.creature_content)
 
         for i in range(mutations):
-            print('Iteration: %d' % i)
+            print(f'Iteration: {i}')
             mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
             print('===== new mutant =====')
             print(mutated_content)
             print('===== new =====')
             self.save_mutant(mutated_content)
 
-            if subprocess.call(['python', cmd]) == 0:
+            if subprocess.call([sys.executable, cmd]) == 0:
                 successful_mutations += 1
                 self.creature_content = mutated_content
                 print('===== succeeded - new creature =====')
@@ -144,33 +149,37 @@ class Creature(object):
 
         self.save_mutant(self.creature_content)
 
-        print('Successful mutations: %d' % successful_mutations)
-        print('Failed mutations: %d' % failed_mutations)
+        print(f'Successful mutations: {successful_mutations}')
+        print(f'Failed mutations: {failed_mutations}')
 
 
-class Dictionary(object):
+class Dictionary:  # pylint: disable=too-few-public-methods
     """ This is a simple dictionary. """
     def __init__(self):
         """ Set up the dictionary.
             :return: None
         """
-        # Make sure we have our spelling list extracted
-        txt_name = 'wordsEN.txt'
+        # Make sure we have our spelling list extracted. Note the capitalisation:
+        # the archive contains 'wordsEn.txt', and the original code looked for
+        # 'wordsEN.txt', which only worked because Windows filenames are
+        # case-insensitive. On Linux it extracted the zip and then failed to find
+        # what it had just extracted, on every single run.
+        txt_name = os.path.join(HERE, 'wordsEn.txt')
         if not os.path.exists(txt_name):
-            zip_name = 'wordsEn.zip'
+            zip_name = os.path.join(HERE, 'wordsEn.zip')
             if os.path.exists(zip_name):
                 if zipfile.is_zipfile(zip_name):
                     with zipfile.ZipFile(zip_name) as zip_file:
-                        zip_file.extractall()
+                        zip_file.extractall(HERE)
                 else:
-                    print('It appears that %s is not a valid zip file.' % zip_name)
-                    raise Exception('Dictionary zip file invalid.')
+                    print(f'It appears that {zip_name} is not a valid zip file.')
+                    raise ValueError('Dictionary zip file invalid.')
             else:
-                print('For spell checking, we need %s from'
-                      'http://www-01.sil.org/linguistics/wordlists/english/wordlist/wordsEn.zip'
-                      'in the current directory.  Did not find this file.' % zip_name)
-                raise Exception('Dictionary zip file missing.')
-        with open(txt_name) as word_file:
+                print(f'For spell checking, we need {zip_name} from '
+                      'http://www-01.sil.org/linguistics/wordlists/english/wordlist/'
+                      'wordsEn.zip.  Did not find this file.')
+                raise FileNotFoundError('Dictionary zip file missing.')
+        with open(txt_name, encoding='utf-8') as word_file:
             self.all_words = [x.strip() for x in word_file]
 
     def spelled_correctly(self, sentence):
@@ -190,7 +199,7 @@ def main(arguments):
     major = 0
     minor = 0
     micro = 2
-    print('mutate %d.%d.%d' % (major, minor, micro))
+    print(f'mutate {major}.{minor}.{micro}')
     parser = argparse.ArgumentParser()
     parser.add_argument("creature",
                         help='Path to the creature to mutate.  Mutated creature will be saved as'
@@ -203,9 +212,10 @@ def main(arguments):
                         action="store_false")
     args = parser.parse_args(arguments)
 
-    print('args: %s' % args)
+    print(f'args: {args}')
     random.seed(args.seed)
-    print('git: %s' % subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8'))
+    git_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+    print(f'git: {git_sha}')
     if subprocess.call(['git', 'diff-index', '--quiet', 'HEAD', '--']) != 0:
         print('git detects uncommitted changes on top of the above id.')
         print('diff:')

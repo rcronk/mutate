@@ -1,0 +1,5 @@
+# pylint is used as a *selector* in two experiments (hello_world_tested and
+# english), so its version is part of the experimental setup, not just tooling.
+# A newer pylint enforces different rules and will therefore produce different
+# results. Pinned for reproducibility; record the version with any run.
+pylint==4.0.6
