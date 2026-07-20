@@ -1,0 +1,7 @@
+# legacy/ is not a package (its modules are imported as top-level names by the
+# experiment test files, which is how the 2016 code worked). creatures/ reuses
+# the mutation operators from legacy/mutate.py deliberately, so that digital
+# organisms and the legacy experiments mutate by exactly the same rules and
+# their results stay comparable.
+[MASTER]
+init-hook='import sys; sys.path.insert(0, "legacy")'
