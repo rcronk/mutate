@@ -84,6 +84,27 @@ class TestRunLayout(RunnerTestCase):
         self.assertNotEqual(first.directory, second.directory)
         self.assertEqual(2, len(os.listdir(os.path.join(self.results_root, 'beak'))))
 
+    def test_different_settings_at_the_same_seed_do_not_collide(self):
+        """Otherwise a comparison run silently destroys the run it is being
+        compared against, which is exactly what #18 needs to do."""
+        default = self.go(seed=1)
+        legacy = self.go(seed=1, legacy_operators=True)
+        span = self.go(seed=1, span_probability=0.05)
+        no_keywords = self.go(seed=1, use_keywords=False)
+
+        directories = [default.directory, legacy.directory,
+                       span.directory, no_keywords.directory]
+        self.assertEqual(len(directories), len(set(directories)),
+                         'settings that change the experiment must not share a directory')
+
+    def test_default_settings_keep_the_plain_seed_name(self):
+        """The common case stays readable."""
+        result = self.go(seed=1234)
+        self.assertTrue(result.directory.endswith(os.path.join('beak', 'seed-1234')))
+
+    def test_directory_name_records_the_non_default_setting(self):
+        self.assertIn('legacy', self.go(seed=1, legacy_operators=True).directory)
+
 
 class TestIsolation(RunnerTestCase):
     """The reason run directories exist at all."""

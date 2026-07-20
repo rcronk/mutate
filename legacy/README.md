@@ -1,17 +1,23 @@
 # Legacy: Initial Findings (2016-2017)
 
-> **Status: ARCHIVED AND SUPERSEDED.**
+> **Status: the original claims are corrected; the experiments now run.**
 >
-> This directory preserves the first version of the `mutate` project and its published
-> writeup, originally hosted on the GitHub wiki. It is kept for historical continuity
-> and because deleting superseded work is worse practice than correcting it.
+> This directory holds the first version of the `mutate` project and its published
+> writeup, originally hosted on the GitHub wiki.
 >
-> **The corrections in Section A below were published by the author, unprompted, before
-> any external critique.** Several of them materially weaken conclusions stated in the
-> original text, which is reproduced unchanged in Section B.
+> **Section A corrects the original claims.** These were published by the author,
+> unprompted, before any external critique, and several of them materially weaken
+> conclusions stated in the original text. Section C reproduces that original text
+> unchanged.
 >
-> **No result in this directory should be cited as evidence.** The current work is
-> governed by [`../PREREGISTRATION.md`](../PREREGISTRATION.md).
+> **Section B reports what actually happens when the experiments are rerun today**,
+> across five seeds at 1000 generations each, reproducible from a seed and a command.
+> Where the fresh runs bear on a correction, Section A links to them.
+>
+> **What these experiments show is about software, not biology.** Which parts of a
+> codebase survive random change is determined by what the tests cover and by how
+> tightly the syntax couples things together. The original writeup drew conclusions
+> about evolution that the experiments do not support. See A7.
 
 ---
 
@@ -42,10 +48,29 @@ beaks *better* rather than merely *acceptable*.
 This matters because the beak experiment was the project's only claimed demonstration of
 constructive change. That claim is withdrawn.
 
-**Additionally:** the committed artifact does not reproduce the claimed result.
+**The committed artifact does not reproduce the claimed result.**
 `artifacts-2016/mutated_beak.py` is byte-identical to `beak.py` and returns 9, not 3.
-The diff is empty. The 9→3 outcome described in the writeup is not recoverable from
+The diff is empty. The 9 to 3 outcome described in the writeup is not recoverable from
 anything in this repository.
+
+**Rerunning it settles the question.** Across five seeds at 1000 generations each, the
+`9` was never changed to any other digit, not once. Every accepted mutation was
+whitespace or a layout change:
+
+```
+-def get_beak_length():
+-    return 9
++def get_beak_length():  return   9
+```
+
+Two things follow. There is no selective pressure toward a shorter beak, because the
+test accepts every value at or below 9 equally. And a single digit inside a 35 byte
+file is such a small target that random mutation rarely lands on it at all, so even
+neutral drift to a different digit is uncommon. The claim "Adaptation works" is
+withdrawn, and the withdrawal is now backed by a rerunnable experiment rather than by
+reading the test.
+
+Reproduce with: `python legacy/run.py beak --seed 1 --generations 1000`
 
 ### A2. No experiment here used positive selection
 
@@ -81,6 +106,21 @@ that cannot perform the operation proposed to produce new functions, is circular
 "Next steps" section (item 3) of the original text. The criticism is of the conclusions
 drawn before they were implemented, not of the author's awareness of the gap.
 
+**Correction to this correction.** Both operators are now implemented, and adding
+deletion does **not** stop the junk from accumulating. An earlier version of this
+section implied it would. It does not, for two reasons found by measurement:
+
+- Deletion and duplication cancel each other out on average, since both draw span
+  lengths from the same distribution.
+- Growth is actually driven by the three insert-type operators, each of which splices
+  in a mutation string averaging about 2.6 characters, because the Python keywords in
+  the mutation alphabet are around six characters long. `overwrite` is not
+  length-preserving either: it replaces one character with a possibly six-character
+  keyword.
+
+Deletion dilutes growth by consuming part of the operator budget, but does not reverse
+it. Section B reports the measured difference between the two operator sets.
+
 ### A4. The abiogenesis experiment had no binding filter
 
 `abiogenesis.py` is an empty file. The selector runs it and checks for a zero exit code.
@@ -110,7 +150,25 @@ available in [`diffs/`](artifacts-2016/diffs/). They are reproducible from this 
 images were not. This is why evidence now lives in version control rather than in
 external image hosting.
 
-### A6. Scope of the original conclusion
+### A6. Two experiments can never be reproduced as originally run
+
+`hello_world_tested` and `english` use pylint as a **selector**, not as tooling. What
+survives in those runs is whatever pylint of that era happened to accept, so the pylint
+version is part of the experimental setup.
+
+The original runs did not record which pylint they used, and pylint has changed
+substantially since 2016. It now enforces rules that did not exist then, including
+f-string preferences, explicit file encodings, and exception specificity. A mutation
+that survived selection in 2016 may be rejected today purely because the selector
+became stricter.
+
+The 2016 numbers for those two experiments are therefore **permanently
+unreproducible**. Fresh runs reported in Section B are new measurements under a
+recorded pylint version, not confirmations of the old ones, and they should not be read
+as agreeing or disagreeing with the original figures. Every run now records
+`pylint_version` in its manifest so this cannot recur.
+
+### A7. Scope of the original conclusion
 
 The concluding claim, that mutation and selection "were not shown to have creative
 power," is accurate as literally stated but was read, including by the author, as
@@ -121,7 +179,103 @@ No conclusion about biological evolution follows from them.
 
 ---
 
-## Section B. Original text, unaltered
+## Section B. What happens when the experiments are rerun (2026)
+
+Every number below comes from `legacy/summarize.py` reading run manifests. Nothing is
+typed by hand. Reproduce the whole table with:
+
+```
+python legacy/run.py --all --seed 1 --generations 1000
+python legacy/summarize.py --markdown
+```
+
+Five seeds per condition, 1000 generations each, 60 runs total. "2016 set" is the
+original four operators, which can only grow a genome. "all six" adds deletion and
+duplication.
+
+| experiment | operators | selector | seeds | accepted / 1000 | range | bytes |
+|---|---|---|---|---|---|---|
+| abiogenesis | 2016 set | execution only | 5 | 175 (17.5%) | 99-290 | 0 to 146 |
+| abiogenesis | all six | execution only | 5 | 404 (40.4%) | 340-517 | 0 to 101 |
+| beak | 2016 set | test_beak.py | 5 | 43 (4.3%) | 10-66 | 35 to 80 (2.3x) |
+| beak | all six | test_beak.py | 5 | 49 (4.9%) | 29-69 | 35 to 44 (1.2x) |
+| body_plans | 2016 set | test_body_plans.py | 5 | 203 (20.3%) | 181-235 | 1169 to 1416 (1.2x) |
+| body_plans | all six | test_body_plans.py | 5 | 273 (27.3%) | 257-305 | 1169 to 1275 (1.1x) |
+| english | all six | test_english.py | 5 | 292 (29.2%) | 253-388 | 118 to 238 (2.0x) |
+| hello_world_tested | all six | test_hello_world_tested.py | 5 | 472 (47.2%) | 397-535 | 149 to 521 (3.5x) |
+| hello_world_untested | 2016 set | execution only | 5 | 469 (46.9%) | 456-509 | 45 to 938 (20.8x) |
+| hello_world_untested | all six | execution only | 5 | 580 (58.0%) | 553-619 | 45 to 640 (14.2x) |
+| multiple_functions | 2016 set | test_multiple_functions.py | 5 | 35 (3.5%) | 24-52 | 403 to 437 (1.1x) |
+| multiple_functions | all six | test_multiple_functions.py | 5 | 39 (3.9%) | 27-51 | 403 to 420 (1.0x) |
+
+`english` and `hello_world_tested` have no 2016-set rows: those two use pylint as a
+selector and are reported under the recorded pylint version only, for the reason given
+in A6.
+
+### D1. What survives is exactly what something checks
+
+Acceptance rate falls as protection rises, and the ordering is clean:
+
+| experiment | accepted | what protects it |
+|---|---|---|
+| multiple_functions | 3.9% | four functions, each tested, plus an aggregate test |
+| beak | 4.9% | one tested return value in a 35 byte file |
+| body_plans | 27.3% | one of nine branches is reached and tested |
+| english | 29.2% | spell check plus pylint |
+| abiogenesis | 40.4% | nothing; an empty file already exits 0 |
+| hello_world_untested | 58.0% | nothing but syntax |
+
+This is the honest result of the whole project, and it is about software. A mutation
+survives when nothing observes the thing it broke. That is the same statement as
+"surviving mutants indicate weak tests," which is the premise of mutation testing.
+
+### D2. Short-circuit evaluation produces three tiers, not two
+
+The original writeup noticed that branches after the taken one decayed. The rerun shows
+a sharper three-way split. From `results/body_plans/seed-1/end.py`:
+
+```python
+        if self.body_plan == 1:            odf.dengscYriptioYR= self.k8ingddomp+ ...
+        elif self.body_plan == 2:
+            Beff.deT =sZn =eslf.k in idom + '%-=' + 'soi =d wi   xth  495plag 2 ...'
+        elif self.body_plan == 3:
+           self.description = self.kingdom + '-' + 'Body plan 3'
+        elif sqelvod4:
+            sbodiy_plelf.descriIpjn = seTf.kin +'-' ' while Body= 7 ...'
+```
+
+- **Evaluated and executed** (branch 3): condition and body both pristine.
+- **Evaluated but not executed** (branches 1 and 2): the *conditions* survive intact,
+  because they are still evaluated every run and a syntax error there is fatal. The
+  *bodies* are destroyed, because they never execute.
+- **Never evaluated at all** (branches 4 to 9): conditions and bodies both destroyed.
+  Once branch 3 matches, Python stops evaluating, so `elif sqelvod4:` costs nothing.
+
+The middle tier is the interesting one for a working engineer. Those lines are executed
+in the sense that the interpreter reads and evaluates them, they show as covered by
+some tooling, and their contents are still entirely unprotected.
+
+### D3. Deletion slows growth but does not stop it, and raises acceptance
+
+Adding deletion and duplication changes both numbers, in the same direction every time.
+
+Final size falls substantially. On `hello_world_untested`, growth drops from 20.8x to
+14.2x (938 bytes down to 640). On `beak`, from 2.3x to 1.2x. But growth never becomes
+shrinkage, because the three insert-type operators still dominate. This is the measured
+basis for the correction recorded in A3.
+
+Acceptance rate *rises* in every single experiment, most sharply on `abiogenesis`
+(17.5% to 40.4%). Deleting accumulated junk is usually harmless, so more mutations
+survive selection once deletion is available. That was not predicted.
+
+### D4. The beak digit is never hit
+
+Across five seeds and 5000 total generations, the `9` in `beak.py` was never changed to
+another digit. Accepted mutations were whitespace and layout only. See A1.
+
+---
+
+## Section C. Original text, unaltered
 
 The following is the original wiki page as published, preserved verbatim. Image links
 are retained as they appeared and are known to be broken (see A5); regenerated text
@@ -256,7 +410,7 @@ So far, my intuition has been confirmed by these initial test results: random mu
 
 ---
 
-## Section C. Known code defects in this directory
+## Section D. Known code defects in this directory
 
 Preserved as-is; not fixed, since this code is archived.
 
