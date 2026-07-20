@@ -25,11 +25,15 @@ import mutate
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_RESULTS_ROOT = os.path.join(os.path.dirname(HERE), 'results')
 
-# Files in this directory that are not mutation experiments.
+# Files in this directory that are not mutation experiments. Anything added
+# here that is tooling rather than an experiment must be listed, otherwise it
+# gets mutated. test_run.py asserts the exact expected set, so a new tool fails
+# the suite loudly rather than silently becoming an experiment.
+#
 # self_mutator.py is the abandoned 2017 self-replication attempt. It does not
-# run at all (see legacy/README.md section C) and is the starting point for
+# run at all (see legacy/README.md section D) and is the starting point for
 # phase 2 of the roadmap rather than something to mutate.
-_NOT_EXPERIMENTS = {'mutate.py', 'run.py', 'self_mutator.py'}
+_NOT_EXPERIMENTS = {'mutate.py', 'run.py', 'summarize.py', 'self_mutator.py'}
 
 
 @dataclasses.dataclass
@@ -90,14 +94,38 @@ def _git_sha():
         return None
 
 
-def _prepare_directory(experiment, seed, results_root):
+def run_key(seed, *, legacy_operators=False,
+            span_probability=mutate.DEFAULT_SPAN_PROBABILITY, use_keywords=True):
+    """ Builds the directory name for a run.
+
+        Keyed by seed alone in the common case, so the tree stays readable, but
+        any setting that changes what the experiment does is appended. Without
+        that, a comparison run at the same seed silently overwrites the run it
+        is being compared against.
+    :param seed: Random seed
+    :param legacy_operators: Whether the 2016 operator set was used
+    :param span_probability: Geometric parameter for delete/duplicate spans
+    :param use_keywords: Whether Python keywords are in the mutation alphabet
+    :return: Directory name
+    """
+    key = f'seed-{seed}'
+    if legacy_operators:
+        key += '-legacy'
+    if span_probability != mutate.DEFAULT_SPAN_PROBABILITY:
+        key += f'-span{span_probability:g}'
+    if not use_keywords:
+        key += '-nokeywords'
+    return key
+
+
+def _prepare_directory(experiment, key, results_root):
     """ Creates a clean working directory and copies the experiment into it.
     :param experiment: Experiment name
-    :param seed: Random seed
+    :param key: Directory name from run_key()
     :param results_root: Root directory for all results
     :return: Path to the prepared working directory
     """
-    directory = os.path.join(results_root, experiment, f'seed-{seed}')
+    directory = os.path.join(results_root, experiment, key)
     if os.path.isdir(directory):
         shutil.rmtree(directory)
     os.makedirs(directory)
@@ -131,7 +159,11 @@ def run_experiment(experiment, *, seed, generations,  # pylint: disable=too-many
             f'Unknown experiment {experiment!r}. '
             f'Available: {", ".join(available_experiments())}')
 
-    directory = _prepare_directory(experiment, seed, results_root)
+    directory = _prepare_directory(
+        experiment,
+        run_key(seed, legacy_operators=legacy_operators,
+                span_probability=span_probability, use_keywords=use_keywords),
+        results_root)
     weights = (mutate.LEGACY_MUTATION_WEIGHTS if legacy_operators
                else mutate.DEFAULT_MUTATION_WEIGHTS)
 
