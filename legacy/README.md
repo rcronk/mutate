@@ -43,7 +43,7 @@ This matters because the beak experiment was the project's only claimed demonstr
 constructive change. That claim is withdrawn.
 
 **Additionally:** the committed artifact does not reproduce the claimed result.
-`mutated_beak.py` in this directory is byte-identical to `beak.py` and returns 9, not 3.
+`artifacts-2016/mutated_beak.py` is byte-identical to `beak.py` and returns 9, not 3.
 The diff is empty. The 9→3 outcome described in the writeup is not recoverable from
 anything in this repository.
 
@@ -86,7 +86,7 @@ drawn before they were implemented, not of the author's awareness of the gap.
 `abiogenesis.py` is an empty file. The selector runs it and checks for a zero exit code.
 An empty Python file exits 0. So does almost any file consisting of stray numeric
 literals. **The filter never rejected anything on functional grounds**, so the run was an
-unconstrained random walk, and `mutated_abiogenesis.py` is what an unconstrained random
+unconstrained random walk, and `artifacts-2016/mutated_abiogenesis.py` is what an unconstrained random
 walk produces.
 
 The original text reasons correctly that there is no natural selection before
@@ -106,7 +106,7 @@ All eight images in the original wiki page were hosted on temporary OneDrive URL
 been presenting its conclusions with no accessible evidence for an unknown period.
 
 The diffs have been regenerated as text from the source files preserved here and are
-available in [`diffs/`](diffs/). They are reproducible from this repository, which the
+available in [`diffs/`](artifacts-2016/diffs/). They are reproducible from this repository, which the
 images were not. This is why evidence now lives in version control rather than in
 external image hosting.
 
@@ -125,7 +125,7 @@ No conclusion about biological evolution follows from them.
 
 The following is the original wiki page as published, preserved verbatim. Image links
 are retained as they appeared and are known to be broken (see A5); regenerated text
-diffs are in [`diffs/`](diffs/).
+diffs are in [`diffs/`](artifacts-2016/diffs/).
 
 ---
 
@@ -147,7 +147,7 @@ There are roughly 35 to 40 different 8-bit characters used in the program exampl
 
 ## Hello World - untested
 
-*(image broken — see [`diffs/hello_world_untested.diff`](diffs/hello_world_untested.diff))*
+*(image broken, see [`artifacts-2016/diffs/hello_world_untested.diff`](artifacts-2016/diffs/hello_world_untested.diff))*
 
 The image above shows the differences between the starting point of the untested hello world program (on the left) and the final state of it after 1000 generations (mutations) (on the right).  This program had no unit tests, so all that was tested is that it could be executed and wouldn't return an error because of syntax errors or other errors.
 
@@ -159,7 +159,7 @@ So without tests to check what this program is doing, it gets destroyed.
 
 ## Hello World – tested
 
-*(image broken — see [`diffs/hello_world_tested.diff`](diffs/hello_world_tested.diff))*
+*(image broken, see [`artifacts-2016/diffs/hello_world_tested.diff`](artifacts-2016/diffs/hello_world_tested.diff))*
 
 This looks much better.  The unit test for this hello world program calls the function named hello_world() and then verifies that the text returned is "Hello World!".  Just doing that causes a lot of things to change from the untested version.
 
@@ -169,7 +169,7 @@ No parameter was added to the function because such a parameter isn't optional. 
 
 The "return" and the text in quotes remain unchanged because either of those being changed would cause the unit test to fail.  There was an "R" inserted before the quoted string, which, in Python, indicates that the text inside the string is to be taken literally and escape characters like backslashes are to be taken literally.  Since there are no escape characters inside the string, this mutation did not affect the string being returned and therefore was accepted.  There was also a newline character inserted before the closing parenthesis, which has no effect on the code's operation but makes it less readable.  Once I add pylint to the test suite, I believe most of these mutations will become impossible since they all degrade the quality, readability, and maintainability of the code.
 
-*(image broken — Hello World, tested and pylinted)*
+*(image broken: Hello World, tested and pylinted)*
 
 Here we have the pylint-constricted test that looks worse in some ways and better in others.  To get a score of 10 out of 10 from pylint, you must have module- and function-level docstrings, which are the strings you see at the top of the file and within the function itself that start and end with triple quotes, which are multi-line strings in Python.  These got destroyed, and so that's the main regression with the pylint test.  The unit test to check the phrase returned is still in place.
 
@@ -183,7 +183,7 @@ In summary, pylint prevented the numeric garbage from happening and kept line le
 
 ## Abiogenesis - untested
 
-*(image broken — see [`diffs/abiogenesis.diff`](diffs/abiogenesis.diff))*
+*(image broken, see [`artifacts-2016/diffs/abiogenesis.diff`](artifacts-2016/diffs/abiogenesis.diff))*
 
 I decided to start with an empty file and see what would grow.  Since I wasn't sure what to test, I didn't add a test to this one.  I could have written a test to see if a self-replicating program appeared with many functions that work together to reproduce itself - like what would be necessary for a cell to emerge before it could replicate itself - but my instincts are that any such test would prevent any mutation that didn't produce something functional right off the bat.  I'd end up with an empty file.  And really, without replication, there are no tests.  No replication means no natural selection, which means no tests.
 
@@ -193,7 +193,7 @@ So the only thing allowed to grow was something random that didn't actually do a
 
 ## Beak Length - tested
 
-*(image broken — diff is empty; see correction [A1](#a1-the-beak-result-is-genetic-drift-not-adaptation))*
+*(image broken, diff is empty; see correction [A1](#a1-the-beak-result-is-genetic-drift-not-adaptation))*
 
 I wanted to test if adaptation could occur by mutating an already existing "knob" like beak length.  Assume that shorter beak lengths will survive better than longer beak lengths and that anything over length 9 will be selected out.  The unit test lets any beak length 9 or under live and kills off anything larger.  In one of the tests, I got a beak length of 3 to live (the 9 was overwritten with a 3).  Nothing else interesting happened as the rest of the mutations proved fatal by breaking the unit test or invalidating syntax.  Adaptation works.
 
@@ -202,7 +202,7 @@ I wanted to test if adaptation could occur by mutating an already existing "knob
 
 ## Multiple interdependent functions - tested
 
-*(image broken — see [`diffs/multiple_functions.diff`](diffs/multiple_functions.diff))*
+*(image broken, see [`artifacts-2016/diffs/multiple_functions.diff`](artifacts-2016/diffs/multiple_functions.diff))*
 
 Since unit tests are a form of pairs of things that work interdependently and protect each other from mutations, I decided to write a slightly more complex program with 4 functions in it.  The fourth function calling each of the three other functions to get information from them and return the combined result of them.  The unit test tested each of the three functions to ensure they returned the correct intermediate result and tested the fourth function's result, which is redundant.
 
@@ -210,7 +210,7 @@ The results were as expected.  No mutations that broke syntax or broke any inter
 
 ## Body Plans - tested
 
-*(image broken — see [`diffs/body_plans.diff`](diffs/body_plans.diff))*
+*(image broken, see [`artifacts-2016/diffs/body_plans.diff`](artifacts-2016/diffs/body_plans.diff))*
 
 I recently heard a theory around multiple body plans being inside of a single genome.  One possible method for many different body plans to emerge in a relatively short amount of time was for these body plans to be switched on rather than evolving into each other.  I decided to see how information in such a situation would behave.
 
@@ -224,11 +224,11 @@ The exception raised on an invalid body plan also got mutated to the point of dy
 
 Below is the code coverage for a body plans mutation run.  Notice the lines that got coverage in the unit tests (green) are the sane lines, and the lines without unit test coverage (red) are the insane lines:
 
-*(image broken — code coverage screenshot)*
+*(image broken: code coverage screenshot)*
 
 ## English – tested
 
-*(image broken — see [`diffs/english.diff`](diffs/english.diff))*
+*(image broken, see [`artifacts-2016/diffs/english.diff`](artifacts-2016/diffs/english.diff))*
 
 Next up is the mutation of an English sentence.  The starting point for our sentence is from Shakespeare.  The ending point is not.  The unit test for this one just checks to see if the mutation caused a spelling error or not.  If it did, the mutation is rejected.  If the words are all still valid, it accepts it.  "The" was turned into ":De" – yeah, de is in the dictionary I found online, and punctuation is ignored in the test, so some words might gain a colon or other punctuation marks.  "he" was changed into "MD".  "is" was turned into "iS" which is a clever coincidence to change the case of a letter.  "Wise" was changed to "wide".  "The" was appended to be "theM".  The second "wise" in the sentence was turned into "wiRe", which breaks the connection the two "wises" had in the beginning.  "Man" was turned into "wan".  "to" became "tAp".  "be" became "EeL".  "fool" gained a colon as well.
 
