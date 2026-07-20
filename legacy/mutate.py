@@ -35,14 +35,25 @@ DEFAULT_SPAN_PROBABILITY = 0.3
 
 class Creature:
     """ This is a creature that can duplicate itself with errors. """
-    def __init__(self, path_to_creature):
+    def __init__(self, path_to_creature, work_dir=None):
         assert os.path.sep not in path_to_creature
+        # Every experiment writes a file named mutated_<name>.py and its test
+        # file imports that module by name, so two runs sharing a directory
+        # clobber each other.  work_dir keeps each run isolated.
+        self.work_dir = work_dir or os.getcwd()
         self.path_to_creature = path_to_creature
         self.test_path = f'test_{self.path_to_creature}'
         self.mutant_path = f'mutated_{self.path_to_creature}'
 
-        with open(self.path_to_creature, encoding='utf-8') as creature_file:
+        with open(self.in_work_dir(self.path_to_creature), encoding='utf-8') as creature_file:
             self.creature_content = creature_file.read()
+
+    def in_work_dir(self, name):
+        """ Resolves a bare filename against this run's working directory.
+        :param name: Bare filename
+        :return: Absolute path
+        """
+        return os.path.join(self.work_dir, name)
 
     @staticmethod
     def _weighted_choice(choices):
@@ -178,71 +189,89 @@ class Creature:
         :param creature_content: Text of file to be saved.
         :return: None
         """
-        with open(self.mutant_path, 'w', encoding='utf-8') as mutant_path_handle:
+        with open(self.in_work_dir(self.mutant_path), 'w', encoding='utf-8') as mutant_path_handle:
             mutant_path_handle.write(creature_content)
         # Stale bytecode would otherwise be reused, so the mutant that runs would
         # not be the mutant just written. The original hardcoded a Windows path
         # for Python 3.5, which silently did nothing on any other platform.
-        pyc_file = importlib.util.cache_from_source(self.mutant_path)
+        pyc_file = importlib.util.cache_from_source(self.in_work_dir(self.mutant_path))
         if os.path.exists(pyc_file):
             os.unlink(pyc_file)
 
-    def mutate(self, mutations, no_environment, use_keywords,
-               mutation_weights=None, span_probability=DEFAULT_SPAN_PROBABILITY):
+    def _selector_passes(self, cmd):
+        """ Runs the selector and reports whether the mutant survived.
+
+            The mutant is executed in this run's working directory, with the
+            legacy directory on PYTHONPATH so test files can import mutate for
+            the spell-check dictionary.
+        :param cmd: Bare filename of the test file, or of the mutant itself
+        :return: True if the mutant survives selection
+        """
+        env = os.environ.copy()
+        env['PYTHONPATH'] = os.pathsep.join(
+            filter(None, [HERE, env.get('PYTHONPATH', '')]))
+        return subprocess.call([sys.executable, cmd], cwd=self.work_dir, env=env,
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL) == 0
+
+    # Six independent knobs, all of which a caller legitimately needs to set per
+    # run. Bundling them into a config object would add indirection without
+    # removing a decision, so the limit is waived rather than worked around.
+    def mutate(self, mutations, no_environment, use_keywords, *,  # pylint: disable=too-many-arguments
+               mutation_weights=None, span_probability=DEFAULT_SPAN_PROBABILITY,
+               quiet=False):
         """ mutate - mutates something mutations times
         :param mutations: times to mutate
         :param no_environment: Skip unit tests even if present
         :param use_keywords: Use python keywords as mutations or not
         :param mutation_weights: Operator weights; None means all six equally
         :param span_probability: Geometric parameter for delete/duplicate spans
-        :return: None
+        :param quiet: Suppress the per-generation trace
+        :return: (successful_mutations, failed_mutations)
         """
         successful_mutations = 0
         failed_mutations = 0
 
-        if not os.path.exists(self.test_path):
+        def trace(*args):
+            if not quiet:
+                print(*args)
+
+        if not os.path.exists(self.in_work_dir(self.test_path)):
             no_environment = True
 
-        if no_environment:
-            cmd = self.mutant_path
-        else:
-            cmd = self.test_path
+        cmd = self.mutant_path if no_environment else self.test_path
 
         self.save_mutant(self.creature_content)
 
         for i in range(mutations):
-            print(f'Iteration: {i}')
+            trace(f'Iteration: {i}')
             mutated_content = self._flawed_copy(self.creature_content,
                                                 mutation_weights=mutation_weights,
                                                 use_keywords=use_keywords,
                                                 span_probability=span_probability)
-            print('===== new mutant =====')
-            print(mutated_content)
-            print('===== new =====')
+            trace('===== new mutant =====')
+            trace(mutated_content)
+            trace('===== new =====')
             self.save_mutant(mutated_content)
 
-            if subprocess.call([sys.executable, cmd]) == 0:
+            if self._selector_passes(cmd):
                 successful_mutations += 1
                 self.creature_content = mutated_content
-                print('===== succeeded - new creature =====')
-                print(self.creature_content)
-                print('===== succeeded =====')
-#                if subprocess.call(['python', cmd]) != 0:
-#                    raise Exception('Succeeded creature failed!!!')
+                trace('===== succeeded - new creature =====')
+                trace(self.creature_content)
+                trace('===== succeeded =====')
             else:
                 failed_mutations += 1
-                print('===== failed - reverting to this =====')
-                print(self.creature_content)
-                print('===== failed =====')
+                trace('===== failed - reverting to this =====')
+                trace(self.creature_content)
+                trace('===== failed =====')
                 self.save_mutant(self.creature_content)
-                print('===== testing reverted creature =====')
-#                if subprocess.call(['python', cmd]) != 0:
-#                    raise Exception('Reverted creature failed!!!')
 
         self.save_mutant(self.creature_content)
 
-        print(f'Successful mutations: {successful_mutations}')
-        print(f'Failed mutations: {failed_mutations}')
+        trace(f'Successful mutations: {successful_mutations}')
+        trace(f'Failed mutations: {failed_mutations}')
+        return successful_mutations, failed_mutations
 
 
 class Dictionary:  # pylint: disable=too-few-public-methods
