@@ -1,0 +1,14 @@
+# Virtual environment
+.venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Extracted from legacy/wordsEn.zip at runtime, not source
+legacy/wordsEn.txt
+legacy/ReadMe.txt
+
+# Experiment output (see issue #17 for the results directory design).
+# The committed legacy/mutated_*.py files are historical artifacts and ARE tracked.
+results/

@@ -1,5 +1,6 @@
 import unittest
 import subprocess
+import sys
 
 import mutated_english
 import mutate
@@ -8,7 +9,7 @@ import mutate
 class TestEnglish(unittest.TestCase):
     def test_return(self):
         self.assertTrue(mutate.Dictionary().spelled_correctly(mutated_english.QUOTE))
-        self.assertEqual(0, subprocess.call(['pylint', 'mutated_english.py']))
+        self.assertEqual(0, subprocess.call([sys.executable, '-m', 'pylint', 'mutated_english.py']))
 
 
 if __name__ == '__main__':

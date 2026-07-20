@@ -1,5 +1,7 @@
-import unittest
+import importlib.util
 import subprocess
+import sys
+import unittest
 
 import mutate
 
@@ -50,8 +52,10 @@ class TestMutate(unittest.TestCase):
         self.assertTrue(dict.spelled_correctly('world'))
         self.assertFalse(dict.spelled_correctly('rieuerugh'))
 
+    @unittest.skipIf(importlib.util.find_spec('pylint') is None,
+                     'pylint not installed; see requirements.txt')
     def test_pylint(self):
-        self.assertEqual(0, subprocess.call(['pylint', 'mutate.py']))
+        self.assertEqual(0, subprocess.call([sys.executable, '-m', 'pylint', 'mutate.py']))
 
 
 if __name__ == '__main__':
