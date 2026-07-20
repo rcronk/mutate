@@ -12,6 +12,26 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# Operators that add or rearrange rather than remove. These are the only ones
+# the 2016 mutator had, which is why genomes could only ever grow.
+GROWTH_OPERATORS = ('prepend', 'append', 'insert', 'overwrite')
+SPAN_OPERATORS = ('delete', 'duplicate')
+ALL_OPERATORS = GROWTH_OPERATORS + SPAN_OPERATORS
+
+# Default: all six operators, equally weighted.
+DEFAULT_MUTATION_WEIGHTS = {name: 25 for name in ALL_OPERATORS}
+
+# The 2016 operator set, kept so the historical experiments remain reproducible
+# and so runs with and without indels can be compared directly. See issue #18.
+LEGACY_MUTATION_WEIGHTS = {name: (25 if name in GROWTH_OPERATORS else 0)
+                           for name in ALL_OPERATORS}
+
+# Probability parameter for the geometric span length distribution used by
+# delete and duplicate. Mean span length is 1/p, so 0.3 gives a mean of about
+# 3.3 characters: usually short, occasionally longer. Lower it to make
+# large-scale duplication reachable.
+DEFAULT_SPAN_PROBABILITY = 0.3
+
 
 class Creature:
     """ This is a creature that can duplicate itself with errors. """
@@ -43,27 +63,70 @@ class Creature:
         return choices[-1][0]
 
     @staticmethod
-    def _flawed_copy(source, mutation_weights=None, use_keywords=True):
-        """ Copies source and returns it with flaws according to the weighted
-            flaws passed in.
-            source : list of characters
+    def _span_length(max_length, probability=DEFAULT_SPAN_PROBABILITY):
+        """ Draws a span length from a geometric distribution, capped at
+            max_length.  Mean is 1/probability.  Short spans dominate, but the
+            tail is unbounded, so a low probability makes duplication of a whole
+            block reachable without ever telling the mutator where blocks are.
+        :param max_length: Longest span permitted, normally len(source)
+        :param probability: Geometric parameter; mean span length is 1/p
+        :return: An integer in [1, max_length]
         """
-        if mutation_weights is None:
-            mutation_weights = {'prepend':25, 'overwrite':25, 'insert':25, 'append':25}
+        if max_length <= 1:
+            return max_length
+        length = 1
+        while length < max_length and random.random() > probability:
+            length += 1
+        return length
 
-        defect = Creature._weighted_choice([('prepend', mutation_weights['prepend']),
-                                            ('overwrite', mutation_weights['overwrite']),
-                                            ('insert', mutation_weights['insert']),
-                                            ('append', mutation_weights['append'])])
+    @staticmethod
+    def _apply_span_operator(source, defect, span_probability):
+        """ Applies an operator that acts on a span of the existing source
+            rather than splicing in a newly generated fragment.
 
+            delete    removes a contiguous span.  The 2016 mutator had no way
+                      to do this, so its genomes could only ever grow.
+            duplicate copies a contiguous span and reinserts it at a random
+                      position.  This is the mechanism proposed for the origin
+                      of new genes (Ohno 1970); the position is random rather
+                      than adjacent so the mutator is not told where meaningful
+                      boundaries lie.
+        :param source: The text to mutate
+        :param defect: One of SPAN_OPERATORS
+        :param span_probability: Geometric parameter for the span length
+        :return: The mutated text
+        """
+        if len(source) == 0:
+            return source
+        span = Creature._span_length(len(source), span_probability)
+        start = random.randint(0, len(source) - span)
+        if defect == 'delete':
+            return source[:start] + source[start + span:]
+        copied = source[start:start + span]
+        paste_at = random.randint(0, len(source))
+        return source[:paste_at] + copied + source[paste_at:]
+
+    @staticmethod
+    def _apply_splice_operator(source, defect, use_keywords):
+        """ Applies an operator that splices a newly generated fragment into
+            the source.  These four are the entire 2016 operator set.
+
+            Note that none of them can shorten the source, and that overwrite
+            is not length-preserving: it replaces one character with a mutation
+            string that may be a Python keyword of around six characters. That
+            asymmetry is the reason the original runs accumulated junk.
+        :param source: The text to mutate
+        :param defect: One of GROWTH_OPERATORS
+        :param use_keywords: Include Python keywords in the mutation alphabet
+        :return: The mutated text
+        """
+        python_keywords = []
         if use_keywords:
             python_keywords = [' and ', ' del ', ' from ', ' not ', ' while ', ' as ', ' elif ',
                                ' global ', ' or ', ' with ', ' assert ', ' else ', ' if ',
                                ' pass ', ' yield ', ' break ', ' except ', ' import ', ' print ',
                                ' class ', ' exec ', ' in ', ' raise ', ' continue ', ' finally ',
                                ' is ', ' return ', ' def ', ' for ', ' lambda ', ' try ']
-        else:
-            python_keywords = []
 
         mutation = random.choice(list(string.ascii_letters) +
                                  list(string.digits) +
@@ -71,21 +134,44 @@ class Creature:
                                  list('\n:=%%'))
 
         if len(source) == 0:
-            source = mutation
-        else:
-            if defect == 'prepend':
-                source = mutation + source
-            elif defect == 'append':
-                source = source + mutation
-            elif defect in ('overwrite', 'insert'):
-                mutation_location = random.randint(0, len(source) - 1)
-                if defect == 'overwrite':
-                    source = source[:mutation_location] + mutation + source[mutation_location + 1:]
-                else:
-                    source = source[:mutation_location] + mutation + source[mutation_location:]
-            else:
-                raise ValueError(f'Invalid defect: {defect}')
-        return source
+            return mutation
+        if defect == 'prepend':
+            return mutation + source
+        if defect == 'append':
+            return source + mutation
+        location = random.randint(0, len(source) - 1)
+        if defect == 'overwrite':
+            return source[:location] + mutation + source[location + 1:]
+        if defect == 'insert':
+            return source[:location] + mutation + source[location:]
+        raise ValueError(f'Invalid defect: {defect}')
+
+    @staticmethod
+    def _flawed_copy(source, mutation_weights=None, use_keywords=True,
+                     span_probability=DEFAULT_SPAN_PROBABILITY):
+        """ Copies source and returns it with flaws according to the weighted
+            flaws passed in.
+            source : list of characters
+        """
+        if mutation_weights is None:
+            mutation_weights = DEFAULT_MUTATION_WEIGHTS
+
+        unknown = set(mutation_weights) - set(ALL_OPERATORS)
+        if unknown:
+            raise ValueError(f'Unknown mutation operators: {sorted(unknown)}')
+        if sum(mutation_weights.values()) <= 0:
+            raise ValueError('At least one mutation operator must have a weight above zero.')
+
+        defect = Creature._weighted_choice(
+            [(name, weight) for name, weight in mutation_weights.items() if weight > 0])
+
+        # delete and duplicate act on a span of the existing source rather than
+        # splicing in a new fragment, so they are handled before a mutation
+        # string is generated at all.
+        if defect in SPAN_OPERATORS:
+            return Creature._apply_span_operator(source, defect, span_probability)
+
+        return Creature._apply_splice_operator(source, defect, use_keywords)
 
     def save_mutant(self, creature_content):
         """ save_mutant: Saves new mutant content to file.
@@ -101,11 +187,14 @@ class Creature:
         if os.path.exists(pyc_file):
             os.unlink(pyc_file)
 
-    def mutate(self, mutations, no_environment, use_keywords):
+    def mutate(self, mutations, no_environment, use_keywords,
+               mutation_weights=None, span_probability=DEFAULT_SPAN_PROBABILITY):
         """ mutate - mutates something mutations times
         :param mutations: times to mutate
         :param no_environment: Skip unit tests even if present
         :param use_keywords: Use python keywords as mutations or not
+        :param mutation_weights: Operator weights; None means all six equally
+        :param span_probability: Geometric parameter for delete/duplicate spans
         :return: None
         """
         successful_mutations = 0
@@ -123,7 +212,10 @@ class Creature:
 
         for i in range(mutations):
             print(f'Iteration: {i}')
-            mutated_content = self._flawed_copy(self.creature_content, use_keywords=use_keywords)
+            mutated_content = self._flawed_copy(self.creature_content,
+                                                mutation_weights=mutation_weights,
+                                                use_keywords=use_keywords,
+                                                span_probability=span_probability)
             print('===== new mutant =====')
             print(mutated_content)
             print('===== new =====')
@@ -210,6 +302,16 @@ def main(arguments):
                         action="store_true")
     parser.add_argument("--no-keywords", help="Don't use python keywords as mutations.",
                         action="store_false")
+    parser.add_argument("--legacy-operators",
+                        help='Use only the 2016 operator set (prepend, append, insert, '
+                             'overwrite).  Genomes can then only grow, which reproduces '
+                             'the original behaviour.',
+                        action="store_true")
+    parser.add_argument("--span-probability",
+                        help='Geometric parameter for delete/duplicate span length.  '
+                             'Mean span is 1/p, so lower values make large-scale '
+                             'duplication reachable.',
+                        type=float, default=DEFAULT_SPAN_PROBABILITY)
     args = parser.parse_args(arguments)
 
     print(f'args: {args}')
@@ -222,7 +324,10 @@ def main(arguments):
         print(subprocess.check_output(['git', 'diff']).strip().decode('utf-8'))
 
     creature = Creature(args.creature)
-    creature.mutate(args.mutations, args.no_environment, args.no_keywords)
+    weights = LEGACY_MUTATION_WEIGHTS if args.legacy_operators else DEFAULT_MUTATION_WEIGHTS
+    print(f'operators: {sorted(name for name, w in weights.items() if w > 0)}')
+    creature.mutate(args.mutations, args.no_environment, args.no_keywords,
+                    mutation_weights=weights, span_probability=args.span_probability)
 
 
 if __name__ == "__main__":
