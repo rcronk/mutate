@@ -12,14 +12,22 @@ there first. That is the competition the 2017 version never had: it counted
 fuel down with nothing to eat and no shared resource.
 """
 
-# Defaults roughly follow the abandoned 2017 self_mutator: fuel 10, death at
-# age 10, fertile between ages 2 and 5.
-DEFAULT_FUEL = 10
-DEFAULT_MAX_FUEL = 20
-DEFAULT_MAX_AGE = 10
+# The 2017 self_mutator used fuel 10, death at age 10, fertile between ages 2
+# and 5, and a reproduction cost of 5. Those numbers drive a *mutating*
+# population extinct every time, because only about 17% of births produce a
+# working creature (see genome.py), so a creature needs roughly six attempts
+# just to replace itself and those settings allow about two.
+#
+# These defaults widen the fertile window and cheapen reproduction enough that
+# a mutating population sustains itself. That is the minimum for there to be
+# anything to observe: a lineage that cannot reach replacement is not a
+# minimal creature, it is a dead one.
+DEFAULT_FUEL = 15
+DEFAULT_MAX_FUEL = 40
+DEFAULT_MAX_AGE = 12
 DEFAULT_FERTILE_FROM = 2
-DEFAULT_FERTILE_UNTIL = 5
-DEFAULT_REPRODUCTION_COST = 5
+DEFAULT_FERTILE_UNTIL = 8
+DEFAULT_REPRODUCTION_COST = 1
 
 
 class DeadCreatureError(Exception):

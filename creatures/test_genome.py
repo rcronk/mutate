@@ -41,13 +41,23 @@ class TestAncestor(unittest.TestCase):
         decision = genome.decide(genome.ANCESTOR_SOURCE, age=1, fuel=1, max_fuel=20)
         self.assertGreater(decision['eat'], 0)
 
-    def test_ancestor_breeds_inside_the_fertile_window(self):
+    def test_ancestor_asks_to_breed_when_healthy(self):
         decision = genome.decide(genome.ANCESTOR_SOURCE, age=3, fuel=20, max_fuel=20)
         self.assertTrue(decision['reproduce'])
 
-    def test_ancestor_does_not_breed_when_too_young(self):
-        decision = genome.decide(genome.ANCESTOR_SOURCE, age=0, fuel=20, max_fuel=20)
+    def test_ancestor_does_not_ask_to_breed_when_starving(self):
+        decision = genome.decide(genome.ANCESTOR_SOURCE, age=3, fuel=1, max_fuel=20)
         self.assertFalse(decision['reproduce'])
+
+    def test_ancestor_does_not_police_its_own_fertility(self):
+        """It asks at every age; lifecycle.can_reproduce decides. An earlier
+        ancestor hardcoded `2 <= age <= 5`, which capped every creature at two
+        breeding attempts no matter what the engine allowed and drove every
+        population extinct."""
+        young = genome.decide(genome.ANCESTOR_SOURCE, age=0, fuel=20, max_fuel=20)
+        old = genome.decide(genome.ANCESTOR_SOURCE, age=99, fuel=20, max_fuel=20)
+        self.assertTrue(young['reproduce'])
+        self.assertTrue(old['reproduce'])
 
 
 class TestDecisionNormalising(unittest.TestCase):

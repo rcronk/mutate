@@ -20,19 +20,26 @@ import hashlib
 import random
 import sys
 import os
+import warnings
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                 'legacy'))
 
 import mutate  # noqa: E402  pylint: disable=wrong-import-position
 
-# Deliberately minimal: enough to survive and breed so a population exists at
-# all, with obvious room to improve. Anything cleverer would hand the process a
-# strategy it is supposed to find for itself.
+# Deliberately minimal: eat harder when low, otherwise eat modestly and try to
+# breed. Anything cleverer would hand the process a strategy it is supposed to
+# find for itself.
+#
+# Note what it does NOT do: it never checks whether it is old enough to breed.
+# An earlier version hardcoded `2 <= age <= 5`, which quietly capped every
+# creature at two breeding attempts regardless of the engine's fertile window,
+# and drove every population to extinction. Fertility is the engine's business
+# (see lifecycle.can_reproduce); the creature just asks.
 ANCESTOR_SOURCE = '''def act(age, fuel, max_fuel):
     if fuel < max_fuel / 2:
-        return {'eat': 3, 'reproduce': False}
-    return {'eat': 1, 'reproduce': 2 <= age <= 5}
+        return {'eat': 5, 'reproduce': False}
+    return {'eat': 3, 'reproduce': True}
 '''
 
 class MisbehavingCreatureError(Exception):
@@ -48,7 +55,11 @@ def is_viable(source):
     :return: True if the source is worth spawning
     """
     try:
-        tree = ast.parse(source)
+        # Mutants also trigger warnings at parse time, such as invalid decimal
+        # literals, not only at exec time.
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            tree = ast.parse(source)
     except (SyntaxError, ValueError):
         return False
     return any(isinstance(node, ast.FunctionDef) and node.name == 'act'
@@ -62,7 +73,13 @@ def load(source):
     """
     namespace = {}
     try:
-        exec(source, namespace)  # pylint: disable=exec-used
+        # Mutants routinely produce constructs Python warns about, such as `is`
+        # with a literal. Left unsuppressed these flood stderr: one exploratory
+        # run emitted 64,523 warning lines. They are expected output of a
+        # mutation experiment, not a problem to report.
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            exec(source, namespace)  # pylint: disable=exec-used
     except Exception as error:  # pylint: disable=broad-except
         raise MisbehavingCreatureError(f'source failed to execute: {error}') from error
     act = namespace.get('act')
