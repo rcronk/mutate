@@ -61,6 +61,24 @@ class TestSpawning(SupervisorTestCase):
         sup.start(founders=3, seed=1)
         self.assertEqual(3, len(sup.living))
 
+    def test_different_run_seeds_give_different_founders(self):
+        """Founder seeds used to be seed + index, so runs with consecutive
+        seeds shared almost every founder and produced near-identical results."""
+        first = self.make()
+        first.start(founders=10, seed=1)
+        second = self.make()
+        second.start(founders=10, seed=2)
+        self.assertEqual(set(), {c.gene.seed for c in first.living}
+                         & {c.gene.seed for c in second.living})
+
+    def test_founders_get_distinct_identities(self):
+        """Otherwise the event log shows every lineage descending from one
+        creature and per-creature tracking collapses."""
+        sup = self.make()
+        sup.start(founders=5, seed=1)
+        identities = {c.gene.identity for c in sup.living}
+        self.assertEqual(5, len(identities))
+
     def test_a_creature_answers_a_tick(self):
         sup = self.make()
         creature = sup.spawn(genome.Genome.founder(seed=1))

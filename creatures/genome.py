@@ -144,7 +144,7 @@ def mutate_source(source, seed):
     return mutate.Creature._flawed_copy(source)  # pylint: disable=protected-access
 
 
-def _derive_seed(parent_seed, birth_index):
+def derive_seed(parent_seed, birth_index):
     """ Derives a child's seed from its parent's seed and birth index.
 
         Hashed rather than added so sibling seeds are not adjacent, which would
@@ -167,12 +167,18 @@ class Genome:
         self.generation = generation
 
     @classmethod
-    def founder(cls, seed):
-        """ Creates the first creature of a run.
-        :param seed: Founder seed for the whole lineage
+    def founder(cls, seed, identity='0'):
+        """ Creates a founding creature of a run.
+
+            Each founder needs its own identity. When several founders shared
+            the identity '0', every lineage in the event log appeared to
+            descend from the same creature and per-creature tracking silently
+            collapsed.
+        :param seed: Founder seed for this lineage
+        :param identity: Lineage root, unique per founder
         :return: A Genome carrying the unmutated ancestor
         """
-        return cls(ANCESTOR_SOURCE, seed, identity='0', generation=1)
+        return cls(ANCESTOR_SOURCE, seed, identity=identity, generation=1)
 
     def child(self, birth_index):
         """ Attempts one offspring. The attempt may fail.
@@ -189,10 +195,10 @@ class Genome:
         :param birth_index: Which offspring this is, counting from zero
         :return: A new Genome, or None if the mutant could not be parsed
         """
-        candidate = mutate_source(self.source, _derive_seed(self.seed, birth_index))
+        candidate = mutate_source(self.source, derive_seed(self.seed, birth_index))
         if not is_viable(candidate):
             return None
         return Genome(source=candidate,
-                      seed=_derive_seed(self.seed, birth_index),
+                      seed=derive_seed(self.seed, birth_index),
                       identity=f'{self.identity}.{birth_index}',
                       generation=self.generation + 1)
