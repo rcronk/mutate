@@ -34,6 +34,11 @@ DEFAULT_TIMEOUT = 0.5
 # Safety valve only. Set well above the population the food supply can sustain.
 DEFAULT_MAX_PROCESSES = 500
 
+# Chance that a given offspring is mutated at all. Mutating every offspring is
+# a rate of one mutation per genome per generation, which is far past the error
+# threshold for this substrate: see the sweep recorded in the PR for #26.
+DEFAULT_MUTATION_PROBABILITY = 0.1
+
 CAUSES = ('starvation', 'old_age', 'crashed', 'timeout')
 
 
@@ -100,11 +105,12 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
     """
 
     # Eight world parameters, all of which an experiment legitimately varies.
-    def __init__(self, *, regrowth=100, food=None,  # pylint: disable=too-many-arguments
+    def __init__(self, *, regrowth=200, food=None,  # pylint: disable=too-many-arguments
                  max_processes=DEFAULT_MAX_PROCESSES,
                  timeout=DEFAULT_TIMEOUT, max_age=lifecycle.DEFAULT_MAX_AGE,
                  max_fuel=lifecycle.DEFAULT_MAX_FUEL,
-                 starting_fuel=lifecycle.DEFAULT_FUEL, log=None):
+                 starting_fuel=lifecycle.DEFAULT_FUEL,
+                 mutation_probability=DEFAULT_MUTATION_PROBABILITY, log=None):
         self.world = lifecycle.World(
             food=regrowth * 5 if food is None else food, regrowth=regrowth)
         self.max_processes = max_processes
@@ -112,6 +118,7 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         self.max_age = max_age
         self.max_fuel = max_fuel
         self.starting_fuel = starting_fuel
+        self.mutation_probability = mutation_probability
 
         # Optional EventLog. Forked runs cannot be replayed by re-running, so
         # what happened is written down as it happens.
@@ -182,8 +189,13 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         except OSError:
             return None
 
-        ready, _, _ = select.select([creature.channel], [], [], self.timeout)
-        if not ready:
+        # poll() rather than select(): select() is limited to FD_SETSIZE (1024)
+        # file descriptors and raises "filedescriptor out of range" once the
+        # population grows past it. Each living creature holds a socket, so that
+        # ceiling is reachable in a normal run.
+        poller = select.poll()
+        poller.register(creature.channel, select.POLLIN)
+        if not poller.poll(self.timeout * 1000):
             return 'timeout'
         try:
             raw = creature.channel.recv(65536)
@@ -269,7 +281,8 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
                 self.log.birth_failed(tick=self.ticks,
                                       parent=creature.gene.identity, reason='capped')
             return None
-        child = creature.gene.child(birth_index=creature.births)
+        child = creature.gene.child(birth_index=creature.births,
+                                    mutation_probability=self.mutation_probability)
         creature.births += 1
         creature.life.pay_for_reproduction()
         if child is None:

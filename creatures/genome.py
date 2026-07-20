@@ -180,7 +180,7 @@ class Genome:
         """
         return cls(ANCESTOR_SOURCE, seed, identity=identity, generation=1)
 
-    def child(self, birth_index):
+    def child(self, birth_index, mutation_probability=1.0):
         """ Attempts one offspring. The attempt may fail.
 
             Exactly one mutation is tried. If the result cannot be parsed, the
@@ -193,12 +193,25 @@ class Genome:
             of mutants that parse still crash when called, and those die in the
             world rather than here, so the cause of death is recorded honestly.
         :param birth_index: Which offspring this is, counting from zero
+        :param mutation_probability: Chance this offspring is mutated at all.
+            At 1.0 every birth mutates, which is a rate of one mutation per
+            genome per generation. For a genome of a few hundred bytes with no
+            redundancy that is far above any biological rate, and it drives the
+            population past the error threshold: damage accumulates faster than
+            selection can remove it and the lineage melts down. Below the
+            threshold most offspring are faithful copies and variation still
+            arrives, just slowly enough to be selected on.
         :return: A new Genome, or None if the mutant could not be parsed
         """
-        candidate = mutate_source(self.source, derive_seed(self.seed, birth_index))
+        seed = derive_seed(self.seed, birth_index)
+        identity = f'{self.identity}.{birth_index}'
+
+        if random.Random(seed).random() >= mutation_probability:
+            return Genome(source=self.source, seed=seed, identity=identity,
+                          generation=self.generation + 1)
+
+        candidate = mutate_source(self.source, seed)
         if not is_viable(candidate):
             return None
-        return Genome(source=candidate,
-                      seed=derive_seed(self.seed, birth_index),
-                      identity=f'{self.identity}.{birth_index}',
+        return Genome(source=candidate, seed=seed, identity=identity,
                       generation=self.generation + 1)

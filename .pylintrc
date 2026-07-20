@@ -5,3 +5,9 @@
 # their results stay comparable.
 [MASTER]
 init-hook='import sys; sys.path.insert(0, "legacy")'
+
+[BASIC]
+# Test methods and Test classes carry their description in the name, and most
+# already have a docstring where the intent is not obvious. Requiring one on
+# every test adds noise without adding information.
+no-docstring-rgx=^(_|test_|Test)

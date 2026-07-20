@@ -12,22 +12,39 @@ there first. That is the competition the 2017 version never had: it counted
 fuel down with nothing to eat and no shared resource.
 """
 
-# The 2017 self_mutator used fuel 10, death at age 10, fertile between ages 2
-# and 5, and a reproduction cost of 5. Those numbers drive a *mutating*
-# population extinct every time, because only about 17% of births produce a
-# working creature (see genome.py), so a creature needs roughly six attempts
-# just to replace itself and those settings allow about two.
+# These defaults were tuned until a mutating population reaches a steady state.
+# The failures along the way are worth recording, because each one looked like a
+# different problem:
 #
-# These defaults widen the fertile window and cheapen reproduction enough that
-# a mutating population sustains itself. That is the minimum for there to be
-# anything to observe: a lineage that cannot reach replacement is not a
-# minimal creature, it is a dead one.
+#   max_age 10, fertile 2-5, cost 5   (the 2017 numbers)
+#       Below replacement. Only ~17% of births produce a working creature, so a
+#       creature needs roughly six attempts to replace itself and these allow
+#       about two. Extinct every time.
+#
+#   max_age 12, fertile 2-8, cost 1
+#       Boom then total collapse, every seed, always by about tick 24. The
+#       deaths told the story: 219 old_age, 0 starvation, 0 crashed. With a
+#       short life and a narrow fertile window the whole population is a single
+#       age cohort. Food shortage suppresses breeding for a few ticks, no
+#       replacements are born, and then everyone hits max_age together.
+#
+#   max_age 40, fertile 2-30, cost 20
+#       Steady. A long life relative to the fertile window keeps several
+#       generations alive at once, so a pause in breeding no longer wipes out
+#       the whole population. Peaks around 210 then settles near 110 and stays
+#       there. Staggering the founders' starting ages was also tried and turned
+#       out not to be needed once lifespan was long enough.
+#
+# The reproduction cost matters for a second reason: at cost 1 breeding is
+# effectively free, so births are limited only by the fertile window rather than
+# by food, and the population overshoots carrying capacity badly. A real cost
+# couples the birth rate to the food supply.
 DEFAULT_FUEL = 15
 DEFAULT_MAX_FUEL = 40
-DEFAULT_MAX_AGE = 12
+DEFAULT_MAX_AGE = 40
 DEFAULT_FERTILE_FROM = 2
-DEFAULT_FERTILE_UNTIL = 8
-DEFAULT_REPRODUCTION_COST = 1
+DEFAULT_FERTILE_UNTIL = 30
+DEFAULT_REPRODUCTION_COST = 20
 
 
 class DeadCreatureError(Exception):

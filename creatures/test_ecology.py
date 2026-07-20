@@ -17,7 +17,8 @@ import unittest
 from creatures import genome, lifecycle
 
 
-def run_population(*, regrowth, ticks=120, founders=20, cap=None, mutate=True):
+def run_population(*, regrowth, ticks=120, founders=20,  # pylint: disable=too-many-locals
+                   cap=None, mutate=True):
     """Runs a population in-process and reports what happened.
 
     :param regrowth: Food added to the shared pool each tick

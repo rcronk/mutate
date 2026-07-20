@@ -21,6 +21,7 @@ from creatures import events
 
 
 class EventTestCase(unittest.TestCase):
+    """Shared setup: every test writes into a throwaway directory."""
 
     def setUp(self):
         self.root = tempfile.mkdtemp(prefix='mutate-events-')
@@ -81,6 +82,7 @@ class TestReplay(EventTestCase):
     """Reconstructing a run from its log, with no processes involved."""
 
     def write_run(self):
+        """Writes a small three-tick run to replay."""
         with events.EventLog(self.path) as log:
             log.birth(tick=0, identity='0', generation=1, parent=None)
             log.birth(tick=0, identity='1', generation=1, parent=None)
