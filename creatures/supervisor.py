@@ -34,6 +34,11 @@ DEFAULT_TIMEOUT = 0.5
 # Safety valve only. Set well above the population the food supply can sustain.
 DEFAULT_MAX_PROCESSES = 500
 
+# Chance that a given offspring is mutated at all. Mutating every offspring is
+# a rate of one mutation per genome per generation, which is far past the error
+# threshold for this substrate: see the sweep recorded in the PR for #26.
+DEFAULT_MUTATION_PROBABILITY = 0.1
+
 CAUSES = ('starvation', 'old_age', 'crashed', 'timeout')
 
 
@@ -100,11 +105,12 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
     """
 
     # Eight world parameters, all of which an experiment legitimately varies.
-    def __init__(self, *, regrowth=100, food=None,  # pylint: disable=too-many-arguments
+    def __init__(self, *, regrowth=200, food=None,  # pylint: disable=too-many-arguments
                  max_processes=DEFAULT_MAX_PROCESSES,
                  timeout=DEFAULT_TIMEOUT, max_age=lifecycle.DEFAULT_MAX_AGE,
                  max_fuel=lifecycle.DEFAULT_MAX_FUEL,
-                 starting_fuel=lifecycle.DEFAULT_FUEL):
+                 starting_fuel=lifecycle.DEFAULT_FUEL,
+                 mutation_probability=DEFAULT_MUTATION_PROBABILITY, log=None):
         self.world = lifecycle.World(
             food=regrowth * 5 if food is None else food, regrowth=regrowth)
         self.max_processes = max_processes
@@ -112,7 +118,11 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         self.max_age = max_age
         self.max_fuel = max_fuel
         self.starting_fuel = starting_fuel
+        self.mutation_probability = mutation_probability
 
+        # Optional EventLog. Forked runs cannot be replayed by re-running, so
+        # what happened is written down as it happens.
+        self.log = log
         self.living = []
         self.deaths = dict.fromkeys(CAUSES, 0)
         self.births = 0
@@ -143,6 +153,10 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         child_end.close()
         creature = Creature(pid, parent_end, gene, self._new_life())
         self.living.append(creature)
+        if self.log is not None:
+            parent = gene.identity.rsplit('.', 1)[0] if '.' in gene.identity else None
+            self.log.birth(tick=self.ticks, identity=gene.identity,
+                           generation=gene.generation, parent=parent)
         return creature
 
     def start(self, founders, seed):
@@ -151,8 +165,13 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         :param seed: Founder seed; each founder gets seed + its index
         :return: None
         """
+        # Founder seeds are derived, not seed + index. Adding the index made
+        # consecutive run seeds share almost all their founders: seeds 1 and 2
+        # differed in one founder out of twenty, so different runs produced
+        # near-identical results.
         for index in range(founders):
-            self.spawn(genome.Genome.founder(seed=seed + index))
+            self.spawn(genome.Genome.founder(seed=genome.derive_seed(seed, index),
+                                             identity=str(index)))
 
     # Seven ways a creature can fail to answer usefully, each needing its own
     # early exit. Collapsing them would only hide which one happened.
@@ -170,8 +189,13 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         except OSError:
             return None
 
-        ready, _, _ = select.select([creature.channel], [], [], self.timeout)
-        if not ready:
+        # poll() rather than select(): select() is limited to FD_SETSIZE (1024)
+        # file descriptors and raises "filedescriptor out of range" once the
+        # population grows past it. Each living creature holds a socket, so that
+        # ceiling is reachable in a normal run.
+        poller = select.poll()
+        poller.register(creature.channel, select.POLLIN)
+        if not poller.poll(self.timeout * 1000):
             return 'timeout'
         try:
             raw = creature.channel.recv(65536)
@@ -190,6 +214,10 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
     def _kill(self, creature, cause):
         """ Ends a creature: records the cause, kills the process, reaps it. """
         self.deaths[cause] += 1
+        if self.log is not None:
+            self.log.death(tick=self.ticks, identity=creature.gene.identity,
+                           cause=cause, age=creature.life.age,
+                           generation=creature.gene.generation)
         creature.close()
         try:
             os.kill(creature.pid, signal.SIGKILL)
@@ -237,6 +265,10 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         for gene in filter(None, newborns):
             self.spawn(gene)
 
+        if self.log is not None:
+            self.log.snapshot(tick=self.ticks, population=len(self.living),
+                              food=self.world.food)
+
     def _breed(self, creature, pending):
         """ Attempts one birth, respecting the process cap.
         :param creature: The parent
@@ -245,11 +277,19 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         """
         if len(self.living) + pending >= self.max_processes:
             self.cap_hits += 1
+            if self.log is not None:
+                self.log.birth_failed(tick=self.ticks,
+                                      parent=creature.gene.identity, reason='capped')
             return None
-        child = creature.gene.child(birth_index=creature.births)
+        child = creature.gene.child(birth_index=creature.births,
+                                    mutation_probability=self.mutation_probability)
         creature.births += 1
         creature.life.pay_for_reproduction()
         if child is None:
+            if self.log is not None:
+                self.log.birth_failed(tick=self.ticks,
+                                      parent=creature.gene.identity,
+                                      reason='unparseable')
             return None
         self.births += 1
         return child

@@ -144,7 +144,7 @@ def mutate_source(source, seed):
     return mutate.Creature._flawed_copy(source)  # pylint: disable=protected-access
 
 
-def _derive_seed(parent_seed, birth_index):
+def derive_seed(parent_seed, birth_index):
     """ Derives a child's seed from its parent's seed and birth index.
 
         Hashed rather than added so sibling seeds are not adjacent, which would
@@ -167,14 +167,20 @@ class Genome:
         self.generation = generation
 
     @classmethod
-    def founder(cls, seed):
-        """ Creates the first creature of a run.
-        :param seed: Founder seed for the whole lineage
+    def founder(cls, seed, identity='0'):
+        """ Creates a founding creature of a run.
+
+            Each founder needs its own identity. When several founders shared
+            the identity '0', every lineage in the event log appeared to
+            descend from the same creature and per-creature tracking silently
+            collapsed.
+        :param seed: Founder seed for this lineage
+        :param identity: Lineage root, unique per founder
         :return: A Genome carrying the unmutated ancestor
         """
-        return cls(ANCESTOR_SOURCE, seed, identity='0', generation=1)
+        return cls(ANCESTOR_SOURCE, seed, identity=identity, generation=1)
 
-    def child(self, birth_index):
+    def child(self, birth_index, mutation_probability=1.0):
         """ Attempts one offspring. The attempt may fail.
 
             Exactly one mutation is tried. If the result cannot be parsed, the
@@ -187,12 +193,25 @@ class Genome:
             of mutants that parse still crash when called, and those die in the
             world rather than here, so the cause of death is recorded honestly.
         :param birth_index: Which offspring this is, counting from zero
+        :param mutation_probability: Chance this offspring is mutated at all.
+            At 1.0 every birth mutates, which is a rate of one mutation per
+            genome per generation. For a genome of a few hundred bytes with no
+            redundancy that is far above any biological rate, and it drives the
+            population past the error threshold: damage accumulates faster than
+            selection can remove it and the lineage melts down. Below the
+            threshold most offspring are faithful copies and variation still
+            arrives, just slowly enough to be selected on.
         :return: A new Genome, or None if the mutant could not be parsed
         """
-        candidate = mutate_source(self.source, _derive_seed(self.seed, birth_index))
+        seed = derive_seed(self.seed, birth_index)
+        identity = f'{self.identity}.{birth_index}'
+
+        if random.Random(seed).random() >= mutation_probability:
+            return Genome(source=self.source, seed=seed, identity=identity,
+                          generation=self.generation + 1)
+
+        candidate = mutate_source(self.source, seed)
         if not is_viable(candidate):
             return None
-        return Genome(source=candidate,
-                      seed=_derive_seed(self.seed, birth_index),
-                      identity=f'{self.identity}.{birth_index}',
+        return Genome(source=candidate, seed=seed, identity=identity,
                       generation=self.generation + 1)

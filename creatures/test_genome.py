@@ -164,6 +164,13 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(1, founder.generation)
         self.assertEqual('0', founder.identity)
 
+    def test_founders_can_be_given_distinct_identities(self):
+        """Several founders sharing identity '0' made every lineage in the
+        event log look like it descended from one creature."""
+        identities = {genome.Genome.founder(seed=i, identity=str(i)).identity
+                      for i in range(5)}
+        self.assertEqual(5, len(identities))
+
     def test_child_seed_derives_from_parent_and_birth_index(self):
         founder = genome.Genome.founder(seed=42)
         first_index, first = self.first_viable_child(founder)

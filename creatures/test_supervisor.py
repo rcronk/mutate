@@ -41,6 +41,7 @@ class SupervisorTestCase(unittest.TestCase):
             sup.shutdown()
 
     def make(self, **kwargs):
+        """Builds a Supervisor that is torn down after the test."""
         kwargs.setdefault('regrowth', 400)
         kwargs.setdefault('max_processes', 50)
         sup = supervisor.Supervisor(**kwargs)
@@ -60,6 +61,24 @@ class TestSpawning(SupervisorTestCase):
         sup = self.make()
         sup.start(founders=3, seed=1)
         self.assertEqual(3, len(sup.living))
+
+    def test_different_run_seeds_give_different_founders(self):
+        """Founder seeds used to be seed + index, so runs with consecutive
+        seeds shared almost every founder and produced near-identical results."""
+        first = self.make()
+        first.start(founders=10, seed=1)
+        second = self.make()
+        second.start(founders=10, seed=2)
+        self.assertEqual(set(), {c.gene.seed for c in first.living}
+                         & {c.gene.seed for c in second.living})
+
+    def test_founders_get_distinct_identities(self):
+        """Otherwise the event log shows every lineage descending from one
+        creature and per-creature tracking collapses."""
+        sup = self.make()
+        sup.start(founders=5, seed=1)
+        identities = {c.gene.identity for c in sup.living}
+        self.assertEqual(5, len(identities))
 
     def test_a_creature_answers_a_tick(self):
         sup = self.make()
@@ -190,6 +209,16 @@ class TestConcurrencyCap(SupervisorTestCase):
             sup.tick()
         self.assertGreater(sup.cap_hits, 0)
 
+    def test_a_large_population_does_not_exhaust_the_fd_limit(self):
+        """select() caps at 1024 file descriptors and each creature holds a
+        socket, so a growing population used to crash with "filedescriptor out
+        of range". poll() has no such limit."""
+        sup = self.make(max_processes=300, regrowth=5000)
+        sup.start(founders=40, seed=1)
+        for _ in range(6):
+            sup.tick()
+        self.assertGreater(len(sup.living), 0)
+
     def test_a_generous_cap_is_never_hit(self):
         sup = self.make(max_processes=500, regrowth=100)
         sup.start(founders=5, seed=1)
@@ -246,3 +275,53 @@ class TestWorldWiring(SupervisorTestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestSteadyState(SupervisorTestCase):
+    """The defaults must produce a population that persists.
+
+    Two earlier default sets did not, and each failed in a different way that
+    looked convincing at short run lengths. See the comment block in
+    lifecycle.py for the full history.
+    """
+
+    def test_the_default_population_survives_a_long_run(self):
+        sup = self.make(max_processes=600, regrowth=200)
+        sup.start(founders=20, seed=1)
+        history = []
+        for _ in range(120):
+            sup.tick()
+            history.append(len(sup.living))
+            if not sup.living:
+                break
+        self.assertGreater(history[-1], 0,
+                           f'extinct at tick {len(history)}, peak was {max(history)}')
+
+    def test_the_population_is_not_still_falling_at_the_end(self):
+        """Extinction used to take about 24 ticks, and a 40 tick run read as
+        'stable at 19' when it was actually still inside the growth phase.
+        Comparing the two halves of the tail catches a slow decline."""
+        sup = self.make(max_processes=600, regrowth=200)
+        sup.start(founders=20, seed=2)
+        history = []
+        for _ in range(120):
+            sup.tick()
+            history.append(len(sup.living))
+            if not sup.living:
+                break
+        self.assertEqual(120, len(history), 'went extinct')
+        first_half = history[60:90]
+        second_half = history[90:]
+        self.assertGreater(sum(second_half) / len(second_half),
+                           sum(first_half) / len(first_half) * 0.5,
+                           'population is collapsing rather than holding')
+
+    def test_generations_keep_turning_over(self):
+        """A surviving population is not enough; it has to still be evolving."""
+        sup = self.make(max_processes=600, regrowth=200)
+        sup.start(founders=20, seed=3)
+        for _ in range(80):
+            sup.tick()
+            if not sup.living:
+                break
+        self.assertGreater(max(c.gene.generation for c in sup.living), 3)
