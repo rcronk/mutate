@@ -27,19 +27,29 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 
 import mutate  # noqa: E402  pylint: disable=wrong-import-position
 
-# Deliberately minimal: eat harder when low, otherwise eat modestly and try to
-# breed. Anything cleverer would hand the process a strategy it is supposed to
-# find for itself.
+# Deliberately minimal, but it now perceives the world and makes a life-history
+# choice, so mutation has a real strategy landscape to explore rather than four
+# lines to break.
 #
-# Note what it does NOT do: it never checks whether it is old enough to breed.
-# An earlier version hardcoded `2 <= age <= 5`, which quietly capped every
-# creature at two breeding attempts regardless of the engine's fertile window,
-# and drove every population to extinction. Fertility is the engine's business
-# (see lifecycle.can_reproduce); the creature just asks.
-ANCESTOR_SOURCE = '''def act(age, fuel, max_fuel):
-    if fuel < max_fuel / 2:
-        return {'eat': 5, 'reproduce': False}
-    return {'eat': 3, 'reproduce': True}
+# It senses two things beyond its own state: how much food is in the shared pool
+# and how many creatures are alive. It makes three choices: how much to eat,
+# whether to try to breed, and how much of its own fuel to endow each offspring.
+# The endowment is the evolvable r/K dial: many cheap offspring that start poor,
+# or few well-provisioned ones.
+#
+# What it still does NOT do is police its own fertility. An earlier version
+# hardcoded `2 <= age <= 5`, which capped every creature at two breeding
+# attempts regardless of the engine's fertile window and drove every population
+# extinct. Fertility is the engine's business (lifecycle.can_reproduce); the
+# creature just asks.
+ANCESTOR_SOURCE = '''def act(age, fuel, max_fuel, food_available, population):
+    hungry = fuel < max_fuel / 2
+    scarce = food_available < population
+    return {
+        'eat': 6 if (hungry or scarce) else 3,
+        'reproduce': not hungry,
+        'endowment': fuel // 4,
+    }
 '''
 
 class MisbehavingCreatureError(Exception):
@@ -88,38 +98,44 @@ def load(source):
     return act
 
 
-def decide(source, *, age, fuel, max_fuel):
+# Five sense inputs a creature conditions on, all keyword-only. The count
+# reflects how much of the world a creature can perceive, not a design problem.
+def decide(source, *, age, fuel, max_fuel,  # pylint: disable=too-many-arguments
+           food_available, population):
     """ Asks a creature what it wants to do, and never trusts the answer.
 
-        A mutant can return anything at all, so the result is normalised:
-        missing keys take defaults, the food request is clamped into range, and
-        anything non-numeric becomes zero. A creature that raises, returns a
-        non-dict, or has the wrong signature is reported as misbehaving rather
-        than allowed to corrupt the world.
+        A mutant can return anything at all, so the result is normalised: missing
+        keys take defaults, and every numeric field is clamped into range with
+        anything non-numeric becoming zero. A creature that raises, returns a
+        non-dict, or no longer accepts the full call is reported as misbehaving
+        rather than allowed to corrupt the world.
     :param source: Creature source
     :param age: Current age in ticks
     :param fuel: Current fuel
     :param max_fuel: The creature's fuel ceiling
-    :return: dict with 'eat' (int) and 'reproduce' (bool)
+    :param food_available: Food in the shared pool this tick
+    :param population: How many creatures are alive
+    :return: dict with 'eat' (int), 'reproduce' (bool), 'endowment' (int)
     """
     act = load(source)
     try:
-        raw = act(age, fuel, max_fuel)
+        raw = act(age, fuel, max_fuel, food_available, population)
     except Exception as error:  # pylint: disable=broad-except
         raise MisbehavingCreatureError(f'act() raised: {error}') from error
 
     if not isinstance(raw, dict):
         raise MisbehavingCreatureError(f'act() returned {type(raw).__name__}, expected dict')
 
-    return {'eat': _clamp_eat(raw.get('eat', 0), max_fuel),
-            'reproduce': bool(raw.get('reproduce', False))}
+    return {'eat': _clamp(raw.get('eat', 0), max_fuel),
+            'reproduce': bool(raw.get('reproduce', False)),
+            'endowment': _clamp(raw.get('endowment', 0), max_fuel)}
 
 
-def _clamp_eat(value, max_fuel):
-    """ Forces a food request into a sane range.
+def _clamp(value, ceiling):
+    """ Forces a numeric decision field into [0, ceiling].
     :param value: Whatever the creature asked for
-    :param max_fuel: Upper bound on a single request
-    :return: An integer between 0 and max_fuel
+    :param ceiling: Upper bound
+    :return: An integer between 0 and ceiling
     """
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return 0
@@ -127,7 +143,7 @@ def _clamp_eat(value, max_fuel):
         wanted = int(value)
     except (ValueError, OverflowError):
         return 0
-    return max(0, min(wanted, max_fuel))
+    return max(0, min(wanted, ceiling))
 
 
 def mutate_source(source, seed):
@@ -189,8 +205,8 @@ class Genome:
             of the substrate, which is the quantity this project exists to
             measure, and no organism gets unlimited attempts at one birth.
 
-            Passing the parse gate is not the same as being alive. Roughly half
-            of mutants that parse still crash when called, and those die in the
+            Passing the parse gate is not the same as being alive. About 69% of
+            mutants that parse still crash when called, and those die in the
             world rather than here, so the cause of death is recorded honestly.
         :param birth_index: Which offspring this is, counting from zero
         :param mutation_probability: Chance this offspring is mutated at all.
@@ -206,11 +222,19 @@ class Genome:
         seed = derive_seed(self.seed, birth_index)
         identity = f'{self.identity}.{birth_index}'
 
+        # The mutate-or-not coin and the mutation itself must use independent
+        # seeds. Reusing one seed for both correlates them: when the coin only
+        # fires for seeds whose first random() is below the probability, and the
+        # mutation then reseeds with that same value, _flawed_copy's first draw
+        # is forced into the same low range and always selects the first
+        # operator (prepend). At mutation_probability 0.1 that made 97% of
+        # mutants unparseable, since prepending to `def act(...)` breaks the
+        # parse almost every time.
         if random.Random(seed).random() >= mutation_probability:
             return Genome(source=self.source, seed=seed, identity=identity,
                           generation=self.generation + 1)
 
-        candidate = mutate_source(self.source, seed)
+        candidate = mutate_source(self.source, derive_seed(seed, 'mutation'))
         if not is_viable(candidate):
             return None
         return Genome(source=candidate, seed=seed, identity=identity,

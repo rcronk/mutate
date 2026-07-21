@@ -99,6 +99,18 @@ def summarize(directory):
     print(f'  deepest generation {replay.deepest_generation}')
     causes = ', '.join(f'{c} {n}' for c, n in sorted(replay.deaths.items()))
     print(f'  deaths             {causes or "none"}')
+
+    strategy = replay.strategy_over_time
+    if strategy:
+        final = strategy[-1]
+        print(f'  genetic divergence {final.get("genetic_divergence", 0):.1%} '
+              f'of the living population is no longer the ancestor')
+        drift = replay.strategy_drift
+        if drift:
+            moved = ', '.join(f'{k} {v:+.2f}' for k, v in sorted(drift.items()))
+            print(f'  strategy drift     {moved}')
+            print('  (realised-strategy drift mixes genetic change with the age '
+                  'distribution;\n   genetic divergence is the cleaner evolution signal)')
     return 0
 
 
