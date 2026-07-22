@@ -68,11 +68,22 @@ def _walk(fitness, ordering):
     return scores
 
 
-def accessible_paths(fitness, k, *, max_exact=DEFAULT_MAX_EXACT,
-                     samples=DEFAULT_SAMPLES, seed=0):
-    """ Counts how many direct paths from all-zero to all-one never decrease.
+# Six knobs, each a legitimate analysis choice (criterion, enumeration limit,
+# sampling). Bundling them would only add indirection.
+def accessible_paths(fitness, k, *, strict=False,  # pylint: disable=too-many-arguments
+                     max_exact=DEFAULT_MAX_EXACT, samples=DEFAULT_SAMPLES, seed=0):
+    """ Counts how many direct paths from all-zero to all-one are accessible.
+
+        Non-strict (the default) counts a path if fitness never *decreases*:
+        selection climbs the rises and drift crosses the flats. This is the
+        crossable/valley distinction from Part A.
+
+        Strict counts a path only if fitness *increases* at every step: each
+        step must carry a real selective advantage. This is Weinreich's (2006)
+        criterion, used to reproduce his result on real data.
     :param fitness: Callable from a k-tuple of 0/1 to a number
     :param k: Number of positions separating start and target
+    :param strict: Require a strict increase at each step
     :param max_exact: Enumerate exactly at or below this k, else sample
     :param samples: How many orderings to sample when k is large
     :param seed: Seed for sampling
@@ -82,7 +93,9 @@ def accessible_paths(fitness, k, *, max_exact=DEFAULT_MAX_EXACT,
     accessible = 0
     for ordering in orderings:
         scores = _walk(fitness, ordering)
-        if all(later >= earlier for earlier, later in zip(scores, scores[1:])):
+        steps = zip(scores, scores[1:])
+        if all((later > earlier) if strict else (later >= earlier)
+               for earlier, later in steps):
             accessible += 1
     return PathResult(accessible=accessible, total=total, sampled=sampled)
 
