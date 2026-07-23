@@ -71,3 +71,32 @@ model-imputed for genotypes missing from the raw sort-seq measurements, so
 individual meanF values away from measured genotypes are model estimates, not
 direct readings. The source also holds SRE2 (GA), 14 other response elements,
 and the derived AncSR2 background, not included here.
+
+## johnston2024_trpb_landscape.csv
+
+Enzyme activity (a growth-based relative fitness) of all four-site combinatorial
+variants at active-site positions 183, 184, 227, 228 of the tryptophan synthase
+beta-subunit TrpB, from:
+
+  Johnston KE, Almhjell PJ, Watkins-Dulaney EJ, Liu G, Porter NJ, Yang J,
+  Arnold FH (2024). "A combinatorially complete epistatic fitness landscape in
+  an enzyme active site." PNAS 121(32):e2400439121.
+
+Two columns: `variant`, the four-letter string of amino acids at the four sites
+(the wild-type parent enzyme Tm9D8* has VFVS), and `fitness`, a growth rate in a
+tryptophan-starved E. coli auxotroph, normalised so the fittest variant equals
+1.0. More active enzymes let the host grow faster.
+
+Obtained from the SSMuLA landscape collection on Zenodo
+(https://doi.org/10.5281/zenodo.13910506, file data.zip, path
+data/TrpB/fitness_landscape/TrpB4.csv), which curates the processed landscape
+from the paper above; the primary deposit is CaltechDATA
+(https://doi.org/10.22002/h5rah-5z170). Restricted here to the 159129 variants
+that use only the twenty standard amino acids and have a measured fitness, out
+of the 20^4 = 160000 possible (99.5% coverage).
+
+The empirical global maximum is AIKG (fitness 1.0), four substitutions from the
+wild type. The landscape is the most rugged of the three, with 802 local maxima,
+and its global peak is not reachable from the wild type by any direct
+non-decreasing path, matching the paper's finding that epistasis prevents
+directed evolution from reaching the optimum.
