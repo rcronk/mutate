@@ -42,3 +42,32 @@ The empirical global maximum of this column is FWAA at fitness 8.76. The
 landscape is rugged: it has 198 local maxima under single-substitution moves,
 reproducing the paper's central finding that direct adaptive paths are often
 blocked.
+
+## herrera2025_ancSR1_RH.csv.gz
+
+Function (mean fluorescence, a readout of transcriptional activation) of every
+combination of twenty amino acids at four recognition-helix sites of the
+reconstructed ancestral steroid receptor AncSR1, measured on two DNA response
+elements, from:
+
+  Herrera-Alvarez S, Patton A, Thornton JW (2025).
+  "The structure of an ancient genotype-phenotype map shaped the functional
+  evolution of a protein family."
+
+Five columns: `variant`, the four-letter recognition-helix string (the
+ancestral helix is EGKA); `ERE_meanF` and `ERE_active`, function and an
+active/null call on the ancestral response element ERE; and `SRE_meanF` and
+`SRE_active`, the same on the derived response element SRE1. This is an
+origin-of-new-function landscape: AncSR1 with helix EGKA is active on ERE and
+null on SRE, and SRE binding is the new function that evolved later in the
+sibling lineage AncSR2. Only 59 of the 160000 helices are active on SRE.
+
+Obtained from the authors' repository https://github.com/JoeThorntonLab/RH-RE_scanning
+(file results/missing_variants/AncSR1_complete_data_corrected.csv.gz), the
+complete corrected AncSR1 landscape, restricted here to the ERE (GT) and
+SRE1 (AA) response elements and the twenty standard amino acids (all 160000
+combinations are present). Values typed "predicted" in the source are
+model-imputed for genotypes missing from the raw sort-seq measurements, so
+individual meanF values away from measured genotypes are model estimates, not
+direct readings. The source also holds SRE2 (GA), 14 other response elements,
+and the derived AncSR2 background, not included here.
