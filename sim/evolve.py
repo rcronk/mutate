@@ -38,14 +38,19 @@ def _tournament(population, scores, rng, size=3):
     return population[best]
 
 
-def run(*, population_size, generations, mutation_rate, seed,
-        ancestor=substrate.ANCESTOR):
+# Six knobs, all keyword-only and each a distinct run parameter; bundling them
+# would only add indirection.
+def run(*, population_size, generations, mutation_rate,  # pylint: disable=too-many-arguments
+        seed, ancestor=substrate.ANCESTOR, fitness=life.reproductive_output):
     """ Evolves a population of programs under reproductive selection.
     :param population_size: How many programs per generation
     :param generations: How many generations to run
     :param mutation_rate: Probability an offspring is mutated rather than copied
     :param seed: Random seed; the same seed reproduces the run
     :param ancestor: The founding program every genome starts as
+    :param fitness: The selection measure, a callable from source to a score;
+        the solo assay by default, or the competitive environment for a run
+        where complexity has to pay
     :return: A Result, whose history is the best score in each generation
         including the founding one
     """
@@ -54,7 +59,7 @@ def run(*, population_size, generations, mutation_rate, seed,
 
     def score(source):
         if source not in cache:
-            cache[source] = life.reproductive_output(source)
+            cache[source] = fitness(source)
         return cache[source]
 
     population = [ancestor] * population_size
