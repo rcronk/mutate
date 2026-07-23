@@ -71,9 +71,15 @@ class EventLog:
         """
         self._write('birth_failed', tick, parent=parent, reason=reason)
 
-    def snapshot(self, *, tick, population, food):
-        """ Records aggregate world state at the end of a tick. """
-        self._write('snapshot', tick, population=population, food=food)
+    def snapshot(self, *, tick, population, food, strategy=None):
+        """ Records aggregate world state at the end of a tick.
+        :param strategy: Optional dict of the living population's mean realised
+            decision (mean_eat, breed_rate, mean_endowment), or None when nobody
+            is alive to have a strategy. This is how we tell a population that
+            evolves from one that merely persists.
+        """
+        self._write('snapshot', tick, population=population, food=food,
+                    strategy=strategy)
 
 
 def read(path):
@@ -112,6 +118,29 @@ class Replay:
     def food_over_time(self):
         """ :return: Food in the pool at the end of each tick """
         return [e['food'] for e in self.events if e['kind'] == 'snapshot']
+
+    @property
+    def strategy_over_time(self):
+        """ The living population's mean realised strategy at each tick that had
+            one. Skips ticks where nobody was alive.
+        :return: List of strategy dicts in tick order
+        """
+        return [e['strategy'] for e in self.events
+                if e['kind'] == 'snapshot' and e.get('strategy') is not None]
+
+    @property
+    def strategy_drift(self):
+        """ How far the population's strategy moved from its first recorded value
+            to its last. A population that only persists shows near-zero drift; a
+            population that evolves shows the strategy shifting.
+        :return: Per-field change (last minus first), or an empty dict if there
+            is not enough data
+        """
+        history = self.strategy_over_time
+        if len(history) < 2:
+            return {}
+        first, last = history[0], history[-1]
+        return {key: last[key] - first[key] for key in first if key in last}
 
     @property
     def births(self):

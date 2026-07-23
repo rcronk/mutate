@@ -46,7 +46,8 @@ def run_population(*, regrowth, ticks=120, founders=20,  # pylint: disable=too-m
                 continue
             try:
                 decision = genome.decide(gene.source, age=life.age, fuel=life.fuel,
-                                         max_fuel=life.max_fuel)
+                                         max_fuel=life.max_fuel,
+                                         food_available=world.food, population=len(pop))
             except genome.MisbehavingCreatureError:
                 life.alive = False
                 deaths['crashed'] += 1
@@ -125,8 +126,11 @@ class TestFoodIsTheLimiter(unittest.TestCase):
         self.assertGreater(rich['deaths']['old_age'], lean['deaths']['old_age'])
 
     def test_too_little_food_ends_in_extinction(self):
-        """The limit has teeth: below replacement, the population dies out."""
-        self.assertTrue(run_population(regrowth=15, ticks=80)['extinct'])
+        """The limit has teeth: below replacement, the population dies out. The
+        threshold moved down sharply when creatures gained a 40 tick lifespan
+        and a cheap reproduction cost, so it now takes near-total starvation
+        (regrowth 5) to force extinction rather than the earlier 15."""
+        self.assertTrue(run_population(regrowth=5, ticks=80)['extinct'])
 
     def test_population_stays_bounded_without_any_cap(self):
         """No cap is passed at all here. If food did not limit growth this

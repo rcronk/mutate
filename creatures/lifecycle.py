@@ -29,22 +29,36 @@ fuel down with nothing to eat and no shared resource.
 #       replacements are born, and then everyone hits max_age together.
 #
 #   max_age 40, fertile 2-30, cost 20
-#       Steady. A long life relative to the fertile window keeps several
-#       generations alive at once, so a pause in breeding no longer wipes out
-#       the whole population. Peaks around 210 then settles near 110 and stays
-#       there. Staggering the founders' starting ages was also tried and turned
-#       out not to be needed once lifespan was long enough.
+#       Steady, before offspring endowment existed. A long life relative to the
+#       fertile window keeps several generations alive at once, so a pause in
+#       breeding no longer wipes out the whole population. Staggering the
+#       founders' starting ages was also tried and turned out not to be needed
+#       once lifespan was long enough.
 #
-# The reproduction cost matters for a second reason: at cost 1 breeding is
-# effectively free, so births are limited only by the fertile window rather than
-# by food, and the population overshoots carrying capacity badly. A real cost
-# couples the birth rate to the food supply.
+#   max_age 40, fertile 2-30, cost 20, WITH endowment
+#       Collapsed back to the founder count. Once a parent also transfers an
+#       endowment to each child (genome.py), a flat cost of 20 plus the
+#       endowment drains the parent to zero on the tick it breeds, and it
+#       starves. The flat cost was tuned for a model where reproduction had no
+#       other cost; endowment made it double-charging.
+#
+#   max_age 40, fertile 2-30, cost 2, WITH endowment
+#       Steady again. The endowment is now the real cost of reproduction, fuel
+#       transferred to the child rather than lost, so the flat cost drops to a
+#       small metabolic overhead. Peaks around 285, settles near 113, with all
+#       three death causes present (starvation, old age, and mutation crashes),
+#       which means food limitation, demography, and mutational load are all
+#       active at once.
+#
+# The flat cost still matters for a second reason even when small: it gates
+# fertility (can_reproduce needs fuel above it), so a starving creature cannot
+# breed, which is what couples the birth rate to the food supply.
 DEFAULT_FUEL = 15
 DEFAULT_MAX_FUEL = 40
 DEFAULT_MAX_AGE = 40
 DEFAULT_FERTILE_FROM = 2
 DEFAULT_FERTILE_UNTIL = 30
-DEFAULT_REPRODUCTION_COST = 20
+DEFAULT_REPRODUCTION_COST = 2
 
 
 class DeadCreatureError(Exception):

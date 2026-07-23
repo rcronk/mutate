@@ -77,6 +77,23 @@ class TestWriting(EventTestCase):
             handle.write('{"kind": "snapshot", "tick": 2, "popula')
         self.assertEqual(1, len(list(events.read(self.path))))
 
+    def test_snapshot_records_the_populations_realised_strategy(self):
+        """The point of widening the decision space: we must be able to see
+        whether the population's strategy drifts from the ancestor."""
+        with events.EventLog(self.path) as log:
+            log.snapshot(tick=1, population=3, food=100,
+                         strategy={'mean_eat': 3.5, 'breed_rate': 0.6,
+                                   'mean_endowment': 4.2})
+        event = events.read(self.path)[0]
+        self.assertIn('strategy', event)
+        self.assertAlmostEqual(3.5, event['strategy']['mean_eat'])
+
+    def test_snapshot_strategy_is_optional(self):
+        """A tick with nobody alive has no strategy to record."""
+        with events.EventLog(self.path) as log:
+            log.snapshot(tick=1, population=0, food=100)
+        self.assertIsNone(events.read(self.path)[0].get('strategy'))
+
 
 class TestReplay(EventTestCase):
     """Reconstructing a run from its log, with no processes involved."""
@@ -134,6 +151,31 @@ class TestReplay(EventTestCase):
         replay = events.Replay(self.path)
         self.assertEqual([], replay.population_over_time)
         self.assertEqual(0, replay.births)
+
+    def test_strategy_over_time_is_recovered(self):
+        with events.EventLog(self.path) as log:
+            log.snapshot(tick=0, population=2, food=100,
+                         strategy={'mean_eat': 3.0, 'breed_rate': 0.5,
+                                   'mean_endowment': 4.0})
+            log.snapshot(tick=1, population=3, food=90,
+                         strategy={'mean_eat': 4.0, 'breed_rate': 0.7,
+                                   'mean_endowment': 5.0})
+        strategy = events.Replay(self.path).strategy_over_time
+        self.assertEqual([3.0, 4.0], [s['mean_eat'] for s in strategy])
+
+    def test_strategy_drift_is_reported(self):
+        """Did the population move away from where it started? This is the
+        difference between a population that evolves and one that just persists."""
+        with events.EventLog(self.path) as log:
+            log.snapshot(tick=0, population=2, food=100,
+                         strategy={'mean_eat': 3.0, 'breed_rate': 0.5,
+                                   'mean_endowment': 4.0})
+            log.snapshot(tick=9, population=2, food=100,
+                         strategy={'mean_eat': 5.0, 'breed_rate': 0.5,
+                                   'mean_endowment': 4.0})
+        drift = events.Replay(self.path).strategy_drift
+        self.assertAlmostEqual(2.0, drift['mean_eat'])
+        self.assertAlmostEqual(0.0, drift['breed_rate'])
 
 
 class TestManifest(EventTestCase):

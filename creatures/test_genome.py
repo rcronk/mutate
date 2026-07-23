@@ -32,74 +32,106 @@ class TestAncestor(unittest.TestCase):
         loaded = genome.load(genome.ANCESTOR_SOURCE)
         self.assertTrue(callable(loaded))
 
-    def test_ancestor_returns_a_decision(self):
-        decision = genome.decide(genome.ANCESTOR_SOURCE, age=1, fuel=5, max_fuel=20)
-        self.assertIn('eat', decision)
-        self.assertIn('reproduce', decision)
+    DECISION_KEYS = ('eat', 'reproduce', 'endowment')
+
+    def decide(self, **overrides):
+        """Run the ancestor with default senses, overriding as needed."""
+        args = {'age': 1, 'fuel': 5, 'max_fuel': 20,
+                'food_available': 100, 'population': 10}
+        args.update(overrides)
+        return genome.decide(genome.ANCESTOR_SOURCE, **args)
+
+    def test_ancestor_returns_a_full_decision(self):
+        decision = self.decide()
+        for key in self.DECISION_KEYS:
+            self.assertIn(key, decision)
 
     def test_ancestor_eats_when_low_on_fuel(self):
-        decision = genome.decide(genome.ANCESTOR_SOURCE, age=1, fuel=1, max_fuel=20)
-        self.assertGreater(decision['eat'], 0)
+        self.assertGreater(self.decide(fuel=1)['eat'], 0)
+
+    def test_ancestor_eats_harder_when_food_is_scarce(self):
+        """A strategy that is only possible now that the creature can see the
+        pool and the population."""
+        plenty = self.decide(fuel=18, food_available=1000, population=5)
+        scarce = self.decide(fuel=18, food_available=2, population=50)
+        self.assertGreater(scarce['eat'], plenty['eat'])
 
     def test_ancestor_asks_to_breed_when_healthy(self):
-        decision = genome.decide(genome.ANCESTOR_SOURCE, age=3, fuel=20, max_fuel=20)
-        self.assertTrue(decision['reproduce'])
+        self.assertTrue(self.decide(age=3, fuel=20)['reproduce'])
 
     def test_ancestor_does_not_ask_to_breed_when_starving(self):
-        decision = genome.decide(genome.ANCESTOR_SOURCE, age=3, fuel=1, max_fuel=20)
-        self.assertFalse(decision['reproduce'])
+        self.assertFalse(self.decide(age=3, fuel=1)['reproduce'])
+
+    def test_ancestor_endows_its_offspring(self):
+        """Offspring investment is the evolvable life-history dial."""
+        self.assertGreater(self.decide(fuel=20)['endowment'], 0)
+
+    def test_a_poorer_parent_endows_less(self):
+        self.assertGreater(self.decide(fuel=40, max_fuel=40)['endowment'],
+                           self.decide(fuel=8, max_fuel=40)['endowment'])
 
     def test_ancestor_does_not_police_its_own_fertility(self):
         """It asks at every age; lifecycle.can_reproduce decides. An earlier
         ancestor hardcoded `2 <= age <= 5`, which capped every creature at two
         breeding attempts no matter what the engine allowed and drove every
         population extinct."""
-        young = genome.decide(genome.ANCESTOR_SOURCE, age=0, fuel=20, max_fuel=20)
-        old = genome.decide(genome.ANCESTOR_SOURCE, age=99, fuel=20, max_fuel=20)
-        self.assertTrue(young['reproduce'])
-        self.assertTrue(old['reproduce'])
+        self.assertTrue(self.decide(age=0, fuel=20)['reproduce'])
+        self.assertTrue(self.decide(age=99, fuel=20)['reproduce'])
 
 
 class TestDecisionNormalising(unittest.TestCase):
     """A mutant can return nonsense. The engine must never trust it."""
 
+    ARGS = {'age': 1, 'fuel': 5, 'max_fuel': 20, 'food_available': 100, 'population': 10}
+    SIG = 'def act(age, fuel, max_fuel, food_available, population):'
+
+    def decide(self, body):
+        """Run a one-line act() body against fixed senses."""
+        return genome.decide(f'{self.SIG}\n    {body}\n', **self.ARGS)
+
     def test_missing_keys_get_defaults(self):
-        source = 'def act(age, fuel, max_fuel):\n    return {}\n'
-        decision = genome.decide(source, age=1, fuel=5, max_fuel=20)
+        decision = self.decide('return {}')
         self.assertEqual(0, decision['eat'])
         self.assertFalse(decision['reproduce'])
+        self.assertEqual(0, decision['endowment'])
 
     def test_negative_eat_is_clamped_to_zero(self):
-        source = 'def act(age, fuel, max_fuel):\n    return {"eat": -50}\n'
-        self.assertEqual(0, genome.decide(source, age=1, fuel=5, max_fuel=20)['eat'])
+        self.assertEqual(0, self.decide('return {"eat": -50}')['eat'])
 
     def test_absurd_eat_is_clamped_to_max_fuel(self):
-        source = 'def act(age, fuel, max_fuel):\n    return {"eat": 10 ** 9}\n'
-        self.assertEqual(20, genome.decide(source, age=1, fuel=5, max_fuel=20)['eat'])
+        self.assertEqual(20, self.decide('return {"eat": 10 ** 9}')['eat'])
 
     def test_non_numeric_eat_becomes_zero(self):
-        source = 'def act(age, fuel, max_fuel):\n    return {"eat": "lots"}\n'
-        self.assertEqual(0, genome.decide(source, age=1, fuel=5, max_fuel=20)['eat'])
+        self.assertEqual(0, self.decide('return {"eat": "lots"}')['eat'])
+
+    def test_negative_endowment_is_clamped_to_zero(self):
+        self.assertEqual(0, self.decide('return {"endowment": -5}')['endowment'])
+
+    def test_endowment_is_capped(self):
+        """A creature cannot conjure fuel to give away that it does not have."""
+        self.assertLessEqual(self.decide('return {"endowment": 10 ** 9}')['endowment'],
+                             self.ARGS['max_fuel'])
+
+    def test_non_numeric_endowment_becomes_zero(self):
+        self.assertEqual(0, self.decide('return {"endowment": None}')['endowment'])
 
     def test_non_dict_return_is_rejected(self):
-        source = 'def act(age, fuel, max_fuel):\n    return 42\n'
         with self.assertRaises(genome.MisbehavingCreatureError):
-            genome.decide(source, age=1, fuel=5, max_fuel=20)
+            self.decide('return 42')
 
     def test_raising_creature_is_reported_not_propagated(self):
-        source = 'def act(age, fuel, max_fuel):\n    raise ValueError("boom")\n'
         with self.assertRaises(genome.MisbehavingCreatureError):
-            genome.decide(source, age=1, fuel=5, max_fuel=20)
+            self.decide('raise ValueError("boom")')
 
-    def test_infinite_loop_is_not_our_problem_but_wrong_arity_is(self):
-        source = 'def act(only_one_arg):\n    return {}\n'
+    def test_wrong_arity_is_misbehaving(self):
+        """Mutation deletes arguments. A creature that no longer accepts the
+        full call is misbehaving and dies in the world, as before."""
         with self.assertRaises(genome.MisbehavingCreatureError):
-            genome.decide(source, age=1, fuel=5, max_fuel=20)
+            genome.decide('def act(only_one_arg):\n    return {}\n', **self.ARGS)
 
     def test_missing_act_is_rejected(self):
-        source = 'x = 1\n'
         with self.assertRaises(genome.MisbehavingCreatureError):
-            genome.decide(source, age=1, fuel=5, max_fuel=20)
+            genome.decide('x = 1\n', **self.ARGS)
 
 
 class TestSyntaxGate(unittest.TestCase):
@@ -144,6 +176,25 @@ class TestMutation(unittest.TestCase):
                      for s in range(300))
         self.assertLess(viable, 250, 'suspiciously tolerant')
         self.assertGreater(viable, 0, 'nothing survives, so nothing can ever evolve')
+
+    def test_low_mutation_rate_does_not_bias_the_operator(self):
+        """The mutate-or-not coin and the mutation must use independent seeds.
+        Reusing one seed forced every low-probability mutation to be a prepend,
+        which made 97% of mutants unparseable and nearly froze evolution. The
+        parse rate among actual mutations must not depend on the rate."""
+        founder = genome.Genome.founder(seed=42)
+        mutated = attempts = 0
+        for i in range(3000):
+            child = founder.child(birth_index=i, mutation_probability=0.1)
+            if child is None:
+                attempts += 1
+            elif child.source != genome.ANCESTOR_SOURCE:
+                attempts += 1
+                mutated += 1
+        parse_rate = mutated / attempts
+        self.assertGreater(parse_rate, 0.2,
+                           f'only {parse_rate:.0%} of mutations parsed; the coin and '
+                           f'the mutation are probably sharing a seed again')
 
 
 class TestLineage(unittest.TestCase):
@@ -218,8 +269,8 @@ class TestLineage(unittest.TestCase):
 
     def test_child_source_is_a_mutant_of_the_parent(self):
         founder = genome.Genome.founder(seed=42)
-        child = founder.child(birth_index=0)
-        self.assertIsNotNone(child, 'seed 42 index 0 happens to produce a viable child')
+        child = next(c for c in (founder.child(birth_index=i) for i in range(200))
+                     if c is not None)
         self.assertNotEqual(founder.source, child.source)
 
     def test_a_birth_can_fail(self):
@@ -259,7 +310,8 @@ class TestLineage(unittest.TestCase):
             if child is None:
                 continue
             try:
-                genome.decide(child.source, age=3, fuel=5, max_fuel=20)
+                genome.decide(child.source, age=3, fuel=5, max_fuel=20,
+                              food_available=100, population=10)
             except genome.MisbehavingCreatureError:
                 broken += 1
         self.assertGreater(broken, 0,

@@ -86,7 +86,9 @@ def _child_loop(channel, source):
                 reply = genome.decide(source,
                                       age=request['age'],
                                       fuel=request['fuel'],
-                                      max_fuel=request['max_fuel'])
+                                      max_fuel=request['max_fuel'],
+                                      food_available=request['food_available'],
+                                      population=request['population'])
             except genome.MisbehavingCreatureError as error:
                 reply = {'error': str(error)}
             writer.write(json.dumps(reply) + '\n')
@@ -104,12 +106,13 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         world parameters, the population, and four separate tallies.
     """
 
-    # Eight world parameters, all of which an experiment legitimately varies.
+    # Nine world parameters, all of which an experiment legitimately varies.
     def __init__(self, *, regrowth=200, food=None,  # pylint: disable=too-many-arguments
                  max_processes=DEFAULT_MAX_PROCESSES,
                  timeout=DEFAULT_TIMEOUT, max_age=lifecycle.DEFAULT_MAX_AGE,
                  max_fuel=lifecycle.DEFAULT_MAX_FUEL,
                  starting_fuel=lifecycle.DEFAULT_FUEL,
+                 reproduction_cost=lifecycle.DEFAULT_REPRODUCTION_COST,
                  mutation_probability=DEFAULT_MUTATION_PROBABILITY, log=None):
         self.world = lifecycle.World(
             food=regrowth * 5 if food is None else food, regrowth=regrowth)
@@ -118,6 +121,7 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         self.max_age = max_age
         self.max_fuel = max_fuel
         self.starting_fuel = starting_fuel
+        self.reproduction_cost = reproduction_cost
         self.mutation_probability = mutation_probability
 
         # Optional EventLog. Forked runs cannot be replayed by re-running, so
@@ -136,13 +140,18 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         self.shutdown()
         return False
 
-    def _new_life(self):
-        return lifecycle.Lifecycle(fuel=self.starting_fuel, max_fuel=self.max_fuel,
-                                   max_age=self.max_age)
+    def _new_life(self, starting_fuel=None):
+        return lifecycle.Lifecycle(
+            fuel=self.starting_fuel if starting_fuel is None else starting_fuel,
+            max_fuel=self.max_fuel, max_age=self.max_age,
+            reproduction_cost=self.reproduction_cost)
 
-    def spawn(self, gene):
+    def spawn(self, gene, starting_fuel=None):
         """ Forks a new creature process.
         :param gene: The Genome the creature will run
+        :param starting_fuel: Fuel the creature begins with. None means the
+            world default; a newborn instead starts with what its parent endowed
+            it, which can be nothing.
         :return: The Creature, already added to the living population
         """
         parent_end, child_end = socket.socketpair()
@@ -151,7 +160,7 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
             parent_end.close()
             _child_loop(child_end, gene.source)
         child_end.close()
-        creature = Creature(pid, parent_end, gene, self._new_life())
+        creature = Creature(pid, parent_end, gene, self._new_life(starting_fuel))
         self.living.append(creature)
         if self.log is not None:
             parent = gene.identity.rsplit('.', 1)[0] if '.' in gene.identity else None
@@ -183,7 +192,9 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         request = json.dumps({'cmd': 'tick',
                               'age': creature.life.age,
                               'fuel': creature.life.fuel,
-                              'max_fuel': creature.life.max_fuel}) + '\n'
+                              'max_fuel': creature.life.max_fuel,
+                              'food_available': self.world.food,
+                              'population': len(self.living)}) + '\n'
         try:
             creature.channel.sendall(request.encode('utf-8'))
         except OSError:
@@ -239,6 +250,7 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
         self.ticks += 1
         self.world.tick()
         newborns = []
+        decisions = []
 
         for creature in list(self.living):
             decision = self.ask(creature)
@@ -251,29 +263,67 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
                 self._kill(creature, 'crashed')
                 continue
 
+            decisions.append(decision)
             creature.life.eat(self.world.request(decision['eat']))
             if decision['reproduce'] and creature.life.can_reproduce:
                 # Newborns are not spawned until the end of the tick, so they
                 # must be counted against the cap here or several births in one
                 # tick can each pass the check and collectively overshoot it.
-                newborns.append(self._breed(creature, pending=len(newborns)))
+                newborns.append(self._breed(creature, decision['endowment'],
+                                            pending=len(newborns)))
             creature.life.tick()
             if not creature.life.alive:
                 self.living.remove(creature)
                 self._kill(creature, creature.life.cause_of_death)
 
-        for gene in filter(None, newborns):
-            self.spawn(gene)
+        for gene, endowment in filter(None, newborns):
+            self.spawn(gene, starting_fuel=endowment)
 
         if self.log is not None:
             self.log.snapshot(tick=self.ticks, population=len(self.living),
-                              food=self.world.food)
+                              food=self.world.food,
+                              strategy=self._strategy(decisions))
 
-    def _breed(self, creature, pending):
+    def _strategy(self, decisions):
+        """ Summarises what the population wanted and what it is made of.
+
+            Two kinds of measurement, deliberately separated. The realised means
+            (eat, breed rate, endowment) mix genetic change with demography: a
+            shifting age distribution changes which decisions get made even if no
+            gene changes. The genetic divergence, the fraction of living
+            creatures that are no longer the unmutated ancestor, is a cleaner
+            signal of actual evolution, since it does not depend on age.
+        :param decisions: The decision dicts collected this tick
+        :return: A strategy dict, or None if nobody is alive
+        """
+        if not decisions and not self.living:
+            return None
+        summary = {
+            'genetic_divergence': (
+                sum(1 for c in self.living if c.gene.source != genome.ANCESTOR_SOURCE)
+                / len(self.living)) if self.living else 0.0,
+        }
+        if decisions:
+            count = len(decisions)
+            summary.update(
+                mean_eat=sum(d['eat'] for d in decisions) / count,
+                breed_rate=sum(1 for d in decisions if d['reproduce']) / count,
+                mean_endowment=sum(d['endowment'] for d in decisions) / count)
+        return summary
+
+    def _breed(self, creature, endowment, pending):
         """ Attempts one birth, respecting the process cap.
+
+            The parent pays two things: the flat reproduction cost, which gates
+            fertility, and the endowment it chose to transfer to the child. The
+            endowment is limited to what the parent has left after the flat cost,
+            since a creature cannot give away fuel it does not have. The child
+            starts with exactly that endowment, which may be zero.
         :param creature: The parent
+        :param endowment: Fuel the parent wants to give the child
         :param pending: Births already agreed this tick but not yet spawned
-        :return: The child Genome, or None if the birth failed or was capped
+        :return: (child Genome, fuel the child starts with), or None if the
+            birth failed or was capped
         """
         if len(self.living) + pending >= self.max_processes:
             self.cap_hits += 1
@@ -291,8 +341,10 @@ class Supervisor:  # pylint: disable=too-many-instance-attributes
                                       parent=creature.gene.identity,
                                       reason='unparseable')
             return None
+        affordable = max(0, min(endowment, creature.life.fuel))
+        creature.life.fuel -= affordable
         self.births += 1
-        return child
+        return child, affordable
 
     def shutdown(self):
         """ Kills and reaps every remaining creature. Safe to call twice.

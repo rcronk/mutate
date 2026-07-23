@@ -145,8 +145,10 @@ class TestMisbehavingCreatures(SupervisorTestCase):
 
     def test_a_creature_that_crashes_is_killed_and_recorded(self):
         sup = self.make()
-        broken = genome.Genome('def act(age, fuel, max_fuel):\n    raise ValueError("x")\n',
-                               seed=1, identity='0', generation=1)
+        broken = genome.Genome(
+            'def act(age, fuel, max_fuel, food_available, population):\n'
+            '    raise ValueError("x")\n',
+            seed=1, identity='0', generation=1)
         creature = sup.spawn(broken)
         sup.tick()
         self.assertEqual(1, sup.deaths['crashed'])
@@ -157,7 +159,7 @@ class TestMisbehavingCreatures(SupervisorTestCase):
         """A mutant containing `while True` is inevitable. It must not stall
         the whole run, and it must be distinguishable from a crash."""
         sup = self.make(timeout=0.25)
-        hung = genome.Genome('def act(age, fuel, max_fuel):\n'
+        hung = genome.Genome('def act(age, fuel, max_fuel, food_available, population):\n'
                              '    while True:\n        pass\n',
                              seed=1, identity='0', generation=1)
         creature = sup.spawn(hung)
@@ -172,7 +174,7 @@ class TestMisbehavingCreatures(SupervisorTestCase):
 
     def test_a_timeout_is_not_counted_as_a_crash(self):
         sup = self.make(timeout=0.25)
-        sup.spawn(genome.Genome('def act(age, fuel, max_fuel):\n'
+        sup.spawn(genome.Genome('def act(age, fuel, max_fuel, food_available, population):\n'
                                 '    while True:\n        pass\n',
                                 seed=1, identity='0', generation=1))
         sup.tick()
@@ -182,7 +184,7 @@ class TestMisbehavingCreatures(SupervisorTestCase):
         """Process isolation is the whole reason for forking."""
         sup = self.make(timeout=0.25)
         sup.start(founders=3, seed=1)
-        sup.spawn(genome.Genome('def act(age, fuel, max_fuel):\n'
+        sup.spawn(genome.Genome('def act(age, fuel, max_fuel, food_available, population):\n'
                                 '    while True:\n        pass\n',
                                 seed=99, identity='x', generation=1))
         sup.tick()
