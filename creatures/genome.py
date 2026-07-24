@@ -16,7 +16,9 @@ produce the same genomes.
 """
 
 import ast
+import contextlib
 import hashlib
+import io
 import random
 import sys
 import os
@@ -87,7 +89,9 @@ def load(source):
         # with a literal. Left unsuppressed these flood stderr: one exploratory
         # run emitted 64,523 warning lines. They are expected output of a
         # mutation experiment, not a problem to report.
-        with warnings.catch_warnings():
+        # redirect_stdout so a mutant that grew a print() cannot pollute our
+        # output; one exploratory run turned into pages of stray True/False.
+        with warnings.catch_warnings(), contextlib.redirect_stdout(io.StringIO()):
             warnings.simplefilter('ignore')
             exec(source, namespace)  # pylint: disable=exec-used
     except Exception as error:  # pylint: disable=broad-except
@@ -119,7 +123,8 @@ def decide(source, *, age, fuel, max_fuel,  # pylint: disable=too-many-arguments
     """
     act = load(source)
     try:
-        raw = act(age, fuel, max_fuel, food_available, population)
+        with contextlib.redirect_stdout(io.StringIO()):
+            raw = act(age, fuel, max_fuel, food_available, population)
     except Exception as error:  # pylint: disable=broad-except
         raise MisbehavingCreatureError(f'act() raised: {error}') from error
 
