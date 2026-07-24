@@ -55,3 +55,20 @@ def protein(cell, env):
 def crude_pool():
     """ :return: A reproducing but suboptimal pool, the seed for the build test """
     return [Protein(_CRUDE)]
+
+
+# Reads two signals and combines them: divide only when there is energy to spare
+# AND the world is safe. This is the structure the TwoSignalWorld rewards, the
+# reference for what evolution would have to build. It is not handed to the build
+# experiment; it is the target to recognise if evolution reaches it.
+_SENSING = '''
+def protein(cell, env):
+    cell.eat(env, 12)
+    if cell.energy > 25 and env.safe:
+        cell.divide()
+'''
+
+
+def sensing_pool():
+    """ :return: A pool that senses both energy and safety (the target structure) """
+    return [Protein(_SENSING)]

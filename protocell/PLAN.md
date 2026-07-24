@@ -119,6 +119,18 @@ not a paper. We decide that on evidence, later.
   functional content and ignores junk, which is the property the build-vs-
   degrade direction needs. **Slice 4 wires this into a population run in an
   environment that rewards function, and reads off the direction.**
+- **Slice 4a** (the environment): first found that feast/famine is solved by
+  *tuning one number*, because a cell's energy already integrates the food
+  signal, so thresholding energy substitutes for sensing. Important trap:
+  environments that look like they demand complexity are often solvable by
+  parameter tuning. Fixed it with a TwoSignalWorld: a second signal (`safe`)
+  independent of energy, so it cannot be proxied; a newborn survives only if
+  divided when safe and fed. Verified a two-signal sensor beats *every* fixed
+  energy threshold, so the environment provably requires reading two inputs and
+  combining them (structure), while we specify only "the optimum needs two
+  inputs," never the code. **Slice 4b runs both seeds here under mutation and
+  reads whether specified information rises (a sensing structure is built) or
+  not.**
 
 ## Revisable assumptions (expect slice feedback to change these)
 
