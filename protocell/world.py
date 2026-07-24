@@ -30,9 +30,13 @@ class Result:
         return not self.survivors
 
 
-def _step(population, env, rng, mutate):
+def _step(population, env, rng, mutate, newborn_survives):
     """ Runs one tick: everyone acts, metabolizes, and maybe divides.
-    :return: (the next population, number of daughters born)
+
+        A daughter is discarded if `newborn_survives` rejects the current
+        environment (a hazard), but the parent has already paid for her, so
+        dividing at the wrong moment is a pure loss.
+    :return: (the next population, number of surviving daughters)
     """
     env.tick()
     rng.shuffle(population)
@@ -46,32 +50,37 @@ def _step(population, env, rng, mutate):
             protein.execute(cell, env)
         cell.metabolize()
         daughter = cell.spawn_daughter(mutate=mutate)
-        if daughter is not None:
+        if daughter is not None and (newborn_survives is None or newborn_survives(env)):
             daughters.append(daughter)
     return [cell for cell in population if cell.alive] + daughters, len(daughters)
 
 
-# Seven knobs, all keyword-only run parameters; bundling them would only hide
+# Eight knobs, all keyword-only run parameters; bundling them would only hide
 # what a run is.
 def run(founder_pool, *, founders=10, ticks=200,  # pylint: disable=too-many-arguments
-        food=DEFAULT_FOOD, regrowth=DEFAULT_REGROWTH, seed=0, mutate=None):
+        food=DEFAULT_FOOD, regrowth=DEFAULT_REGROWTH, seed=0, mutate=None,
+        make_env=None, newborn_survives=None):
     """ Runs a population from a founder protein pool.
     :param founder_pool: A list of Proteins every founder starts with
     :param founders: How many founder cells
     :param ticks: How many ticks to run
-    :param food: Starting food in the shared pool
-    :param regrowth: Food added each tick
+    :param food: Starting food in the default constant world
+    :param regrowth: Food added each tick in the default constant world
     :param seed: Random seed; the same seed reproduces the run
     :param mutate: Optional callable applied to a daughter's protein list
+    :param make_env: Optional factory for a fresh environment; the default is a
+        constant regrowing food pool
+    :param newborn_survives: Optional predicate on the environment; a daughter
+        born when it is false dies (a hazard)
     :return: A Result
     """
     rng = random.Random(seed)
-    env = lifecycle.World(food=food, regrowth=regrowth)
+    env = make_env() if make_env is not None else lifecycle.World(food=food, regrowth=regrowth)
     population = [Cell(list(founder_pool)) for _ in range(founders)]
     history = [len(population)]
     divisions = 0
     for _ in range(ticks):
-        population, born = _step(population, env, rng, mutate)
+        population, born = _step(population, env, rng, mutate, newborn_survives)
         divisions += born
         history.append(len(population))
         if not population:
