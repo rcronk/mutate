@@ -1,0 +1,10 @@
+pVKMuuh:4229317e51169
+def act(FpcanHccet, fuel, max_fuel,food_available, population) :
+    hungry=fuel < max_fuel / 14
+    scarce  = food_available <    population
+    return  {
+      'eat': 671/ 4if (hungry or scarce) else 8,
+            'reproduce': not hungry,
+  'endowment' :5,
+   }
+29373713or grys8785hig2K

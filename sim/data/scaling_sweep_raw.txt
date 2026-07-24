@@ -1,0 +1,29 @@
+Adversarial scaling sweep, raw output. Regenerate with: python -m sim.scaling_full_sweep
+Deterministic (seeded); competitive environment; optimum reference = 7.
+
+== resource scaling (mr=0.5) ==
+  pop=  100 gen=  100 mr=0.5 budget=    10000 seeds=6: max=1  crossed=0/6 bests=[1, 1, 1, 1, 1, 1]
+  pop=  200 gen=  200 mr=0.5 budget=    40000 seeds=6: max=4  crossed=0/6 bests=[3, 4, 4, 1, 2, 1]
+  pop=  400 gen=  400 mr=0.5 budget=   160000 seeds=6: max=6  crossed=0/6 bests=[6, 6, 4, 4, 6, 1]
+  pop=  800 gen=  800 mr=0.5 budget=   640000 seeds=6: max=17 crossed=5/6 bests=[17, 15, 15, 15, 5, 9]
+
+== mutation-rate sweep (200 x 200) ==
+  mr=0.1 budget=40000 seeds=6: max=4 crossed=0/6 bests=[1, 4, 3, 2, 4, 1]
+  mr=0.3 budget=40000 seeds=6: max=6 crossed=0/6 bests=[4, 1, 5, 6, 6, 4]
+  mr=0.5 budget=40000 seeds=6: max=4 crossed=0/6 bests=[3, 4, 4, 1, 2, 1]
+  mr=0.7 budget=40000 seeds=6: max=0 crossed=0/6 bests=[0, 0, 0, 0, 0, 0]
+  mr=0.9 budget=40000 seeds=6: max=0 crossed=0/6 bests=[0, 0, 0, 0, 0, 0]
+
+== stress ==
+  pop= 1500 gen= 1000 mr=0.5 budget=  1500000 seeds=3: max=18 crossed=3/3 bests=[14, 15, 18]
+
+Summary:
+  - The barrier IS crossed once the budget is large enough (around 640,000 here):
+    best fitness climbs 1 -> 4 -> 6 -> 17 -> 18, past the reference optimum of 7.
+  - Mutation rate has an optimum. Moderate (0.1 to 0.5) allows building; 0.7 and
+    above collapse every run to 0, an error catastrophe (mutation destroys faster
+    than selection builds).
+  - So the earlier "ceiling holds" reading was a resource limitation, not a real
+    ceiling. The coordination barrier is real but crossable, set by resources and
+    mutation rate, consistent with Part A: valleys are crossable given enough
+    population and time.
