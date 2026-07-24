@@ -94,6 +94,23 @@ functional-information-direction readout on a protein-pool cell with an observed
 mutation spectrum. If it is prior art, the value is a clean teaching artifact,
 not a paper. We decide that on evidence, later.
 
+## Slice findings (a running log, so the record shows what we learned)
+
+- **Slice 1**: a stochastically-called protein pool hosts a living, dividing,
+  competing population; a pool that cannot feed dies. Substrate validated.
+- **Slice 2** (mutation, observed spectrum): three things surfaced.
+  1. The working pool tolerates observed-spectrum mutation and persists (no
+     meltdown at point rates 0.5-2.0 per division).
+  2. A non-reproducing seed cannot evolve at all: no feeding, no division, and
+     mutation only happens at division, so no variation is ever generated. The
+     build-test seed must reproduce. Added `crude_pool` for that.
+  3. The crude reproducing pool does NOT build better function: at a food-capped
+     carrying capacity a more efficient mutant does not out-reproduce, so there
+     is no selection gradient rewarding function. What accumulates is
+     duplication and degradation, not improvement. **Slice 3 needs an
+     environment that rewards function (a selection gradient), plus the
+     specified-information metric, before build-vs-degrade can be measured.**
+
 ## Revisable assumptions (expect slice feedback to change these)
 
 The protein/cell API, the primitive set, energy/cost/threshold parameters, and
