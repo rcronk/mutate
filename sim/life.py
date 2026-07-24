@@ -1,16 +1,14 @@
-""" life.py - a deterministic single-creature performance assay.
+""" life.py - deterministic single-creature life simulation.
 
 Functional information needs a degree of function to measure rarity against: how
 well a program plays the game of staying alive and reproducing. This runs one
-creature, driven by its own act(), through a single lifetime in a fixed world,
-and returns its lifetime reproductive output: how many offspring it manages to
-pay for and provision before it dies.
+creature, driven by its own act(), through a single lifetime in a fixed world.
 
-Broken or selfish programs score zero (they crash, starve, or never breed); a
-program that feeds itself and breeds when able scores higher. The world and life
-parameters are fixed so the assay is a fair, deterministic comparison across
-programs. It is single-creature by design: this measures a genome's intrinsic
-competence, not population dynamics, which belong to the evolutionary loop.
+`offspring_endowments` is the shared core: it returns the endowment each birth
+carried, so callers can either count births (reproductive_output, the solo
+assay) or hand those offspring to a competitive world (sim.competition). Broken
+or selfish programs produce no surviving line; a program that feeds itself and
+breeds when able produces more.
 """
 
 from creatures import genome, lifecycle
@@ -19,25 +17,26 @@ DEFAULT_REGROWTH = 5
 DEFAULT_STARTING_FOOD = 20
 
 
-def reproductive_output(source, *, regrowth=DEFAULT_REGROWTH,
-                        starting_food=DEFAULT_STARTING_FOOD):
-    """ Runs one creature's life and counts the offspring it produces.
+def offspring_endowments(source, *, starting_fuel=lifecycle.DEFAULT_FUEL,
+                         regrowth=DEFAULT_REGROWTH, starting_food=DEFAULT_STARTING_FOOD):
+    """ Runs one creature's life and returns the endowment of each birth.
 
         Each tick the world regrows, the creature decides, eats what it can from
-        the pool, breeds if it chose to and is eligible, then ages. A birth costs
-        the flat reproduction cost plus whatever fuel the creature endows the
-        child with. A program that cannot be run, crashes on an input, or never
-        breeds scores zero.
+        the pool, breeds if it chose to and is eligible (paying the flat cost and
+        transferring an endowment to the child), then ages. A program that cannot
+        be run or crashes on an input ends its life there.
     :param source: The program source
+    :param starting_fuel: Fuel the creature begins with (an offspring begins with
+        only the fuel its parent endowed it)
     :param regrowth: Food added to the pool each tick
     :param starting_food: Food in the pool at the start
-    :return: Lifetime offspring count, a non-negative integer
+    :return: A list with one endowment value per birth, empty if none
     """
     if not genome.is_viable(source):
-        return 0
-    creature = lifecycle.Lifecycle()
+        return []
+    creature = lifecycle.Lifecycle(fuel=starting_fuel)
     world = lifecycle.World(food=starting_food, regrowth=regrowth)
-    offspring = 0
+    endowments = []
     while creature.alive and creature.age < creature.max_age:
         world.tick()
         try:
@@ -49,7 +48,17 @@ def reproductive_output(source, *, regrowth=DEFAULT_REGROWTH,
         creature.eat(world.request(decision['eat']))
         if decision['reproduce'] and creature.can_reproduce:
             creature.pay_for_reproduction()
-            creature.fuel -= min(decision['endowment'], creature.fuel)
-            offspring += 1
+            endowment = min(decision['endowment'], creature.fuel)
+            creature.fuel -= endowment
+            endowments.append(endowment)
         creature.tick()
-    return offspring
+    return endowments
+
+
+def reproductive_output(source, *, regrowth=DEFAULT_REGROWTH,
+                        starting_food=DEFAULT_STARTING_FOOD):
+    """ The solo assay: how many offspring a program produces in its lifetime.
+    :return: Lifetime offspring count, a non-negative integer
+    """
+    return len(offspring_endowments(source, regrowth=regrowth,
+                                    starting_food=starting_food))
