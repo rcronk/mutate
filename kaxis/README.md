@@ -55,16 +55,47 @@ neutral intermediates, checked against the analytic waiting time (analytic.py):
   -1. See data/waiting_validation.txt.
 
 Because the engine matches the waiting time a population geneticist would compute,
-it cannot be dismissed as rigged. That is the foundation the later buildability(K)
-slices stand on. Run it: `python -m kaxis.validate`.
+it cannot be dismissed as rigged. That is the foundation the buildability(K)
+slice stands on. Run it: `python -m kaxis.validate`.
+
+## Slice 6: buildability(K), and what the gradient assumption is worth
+
+With the engine trusted, slice 6 asks the real question. Building a K-part
+structure is run in two regimes on the same engine and the same mutation supply:
+no gradient (every intermediate neutral, nothing rewards a half-built structure)
+and gradient (each completed step is itself beneficial). The selection dial is
+first validated on its own: a beneficial mutant fixes at about Haldane's 2s
+(`population.fixation_fraction` vs Kimura's formula in analytic.py).
+
+Result (mean generations to build, N=1000, step rate 5e-4, selection 0.1):
+
+| K | no gradient | gradient | cost ratio |
+|---|-------------|----------|------------|
+| 1 | 2.5         | 2.5      | 1.0x       |
+| 2 | 101.8       | 39.4     | 2.6x       |
+| 3 | 646.0       | 79.9     | 8.1x       |
+| 4 | 2015.0      | 125.9    | 16.0x      |
+| 5 | 3509.0      | 179.5    | 19.5x      |
+| 6 | 4900.1      | 222.6    | 22.0x      |
+
+With a gradient the cost grows about **linearly** in K; without one it grows far
+faster, so the **cost ratio widens with every added part**. That widening is the
+measured worth, in generations, of the gradient assumption. In a mutation-limited
+regime (Nu << 1) the no-gradient case does not merely slow down, it stops
+finishing within a fixed resource budget while the gradient still always builds
+(see data/buildability_curve.txt). Run it: `python -m kaxis.buildability`.
+
+This does not decide where real biology sits on the K-axis (how often a partial
+structure is actually rewarded). It makes that the measurable question, which is
+the honest and un-dismissable form of the argument.
 
 ## Next slices
 
-- **Slice 6**: sweep K under honest whole-organism selection and read off
-  buildability(K), with selection strength as the second dial (origin-of-
-  replicator = the large-K, selection-off corner).
-- **Then**: place real biology on the K-axis using measured data (the ridge/ DMS
-  landscapes for the low-K tuning end; de novo function frequencies such as
-  Keefe and Szostak's 37-bit ATP binders for the "how rare is function at all"
-  end), and lit-check (Avida, Tierra, and the waiting-time literature) before any
+- **Place real biology on the K-axis** using measured data: the ridge/ DMS
+  landscapes for the low-K tuning end, de novo function frequencies such as Keefe
+  and Szostak's 37-bit ATP binders for the "how rare is function at all" end.
+- **A protocell demonstration** of the same K contrast in readable code, so a
+  layperson can see the structure that did or did not get built, not only the
+  curve.
+- **Lit-check** (Avida, Tierra, and the waiting-time literature) before any
   write-up.
