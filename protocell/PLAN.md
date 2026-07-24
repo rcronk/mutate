@@ -131,6 +131,26 @@ not a paper. We decide that on evidence, later.
   inputs," never the code. **Slice 4b runs both seeds here under mutation and
   reads whether specified information rises (a sensing structure is built) or
   not.**
+- **Slice 4b** (the experiment): the result is clean in both directions.
+  - Degrade test (sensing seed): purifying selection KEEPS the structure. 100%
+    of survivors still read `safe` after mutation. Function that is rewarded is
+    maintained.
+  - Build test (blind seed): the structure is NOT built. Across seeds, and even
+    at high resource (100 founders x 3000 ticks, recorded in
+    data/build_test_adversarial.txt), no lineage ever builds the `safe` sensor;
+    fitness stays at the blind level (~21), never reaching the sensing optimum
+    (~31). Unlike sim/'s numeric tuning, more resource does not help, because
+    assembling a coherent new token (`env.safe`) wired into the decision is a
+    far deeper coordination barrier than tuning digits.
+  - Specified information (two-signal) reads the difference: the sensing seed
+    carries ~18 more constrained sites than the blind seed, the worth of the
+    sensor, which evolution neither builds from the blind seed nor loses from
+    the sensing one.
+  - **Honest caveat**: this substrate has no modularity, recombination, or
+    module duplication, biology's main structure-building features. So this is
+    "no building in THIS substrate," not a universal claim. Whether adding those
+    features changes it is the knob-dependence study (slice 5+), and the honest
+    framing stays "buildability depends on evolvability," measured, not assumed.
 
 ## Revisable assumptions (expect slice feedback to change these)
 
