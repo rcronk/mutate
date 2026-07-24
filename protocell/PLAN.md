@@ -151,6 +151,17 @@ not a paper. We decide that on evidence, later.
     "no building in THIS substrate," not a universal claim. Whether adding those
     features changes it is the knob-dependence study (slice 5+), and the honest
     framing stays "buildability depends on evolvability," measured, not assumed.
+- **Slice 5** (pivot to the K-axis apparatus, see `kaxis/`): the build/degrade
+  question was generalized into one controlled experiment whose knob is the
+  coordination number K (how many things must be simultaneously right before any
+  reward), with selection strength as a second dial so that the origin-of-
+  replicator case is just the large-K, selection-off corner. Before measuring
+  buildability(K), slice 5 validates the evolutionary engine against mainstream
+  population genetics: a Wright-Fisher engine with neutral intermediates
+  reproduces the exact one-step geometric wait and the Durrett-Schmidt two-step
+  square-root law (wait grows like 1/sqrt(u2), not 1/u2). The engine is therefore
+  not dismissible as rigged, which is the foundation the buildability(K) sweep
+  (slice 6) will stand on.
 
 ## Revisable assumptions (expect slice feedback to change these)
 
