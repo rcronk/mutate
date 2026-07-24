@@ -72,3 +72,19 @@ def protein(cell, env):
 def sensing_pool():
     """ :return: A pool that senses both energy and safety (the target structure) """
     return [Protein(_SENSING)]
+
+
+# Reproduces well in the two-signal world but ignores safety: it divides on
+# energy alone, wasting offspring born into the hazard. The build-test seed: can
+# evolution add the missing second sensor?
+_BLIND = '''
+def protein(cell, env):
+    cell.eat(env, 12)
+    if cell.energy > 25:
+        cell.divide()
+'''
+
+
+def blind_pool():
+    """ :return: A reproducing pool that ignores safety, the build-test seed """
+    return [Protein(_BLIND)]

@@ -1,0 +1,29 @@
+Adversarial build test: does the blind seed build a safety sensor at high
+resource? Recorded because the run is slow. Regenerate with the snippet below.
+
+Setup: two-signal world; blind seed (divides on energy only, ignores safety);
+observed-spectrum mutation (point_lambda=1.0); count survivors whose source
+contains "safe".
+
+Results:
+  founders=30,  ticks=1500, 4 seeds: cells_using_safe = 0, 0, 0, 0
+  founders=100, ticks=3000, 2 seeds: cells_using_safe = 0, 0
+  (fitness of the evolved blind populations stayed ~21, never approaching the
+   sensing optimum of ~31.)
+
+So more resource does not build the structure, unlike the numeric-tuning case in
+sim/ where it did. Building a coherent new token (env.safe) wired into the
+division decision is a far deeper coordination barrier than tuning digits.
+
+Reproduce:
+  import random
+  from protocell import world, environment, mutation
+  from protocell.protein import Protein
+  blind = [Protein('def protein(cell, env):\n    cell.eat(env, 12)\n'
+                   '    if cell.energy > 25:\n        cell.divide()\n')]
+  rng = random.Random(7000)
+  r = world.run(blind, founders=100, ticks=3000, seed=0,
+                make_env=environment.make_world,
+                newborn_survives=environment.newborn_survives,
+                mutate=lambda pool: mutation.mutate(pool, rng, point_lambda=1.0))
+  print(sum(1 for c in r.survivors if 'safe' in c.dump()))

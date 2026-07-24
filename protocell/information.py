@@ -60,17 +60,22 @@ def _genome_length(pool):
     return sum(len(protein.source) for protein in pool)
 
 
-def specified_information(pool, rng, *, samples=DEFAULT_SAMPLES, seeds=ASSAY_SEEDS):
+def specified_information(pool, rng, *, samples=DEFAULT_SAMPLES, seeds=ASSAY_SEEDS,
+                          fitness=None):
     """ Estimates the specified information of a pool by mutation sensitivity.
 
         Draws `samples` single-character substitutions from across the genome and
-        counts how many reduce the assay fitness. The constrained-site estimate
-        is that fraction times the genome length.
+        counts how many reduce fitness. The constrained-site estimate is that
+        fraction times the genome length.
     :param pool: A list of Proteins
     :param rng: A random.Random, for reproducibility
+    :param fitness: Optional fitness callable (pool -> number); defaults to the
+        standard scarce-world assay. Pass another to measure constraint with
+        respect to a different environment, such as the two-signal world.
     :return: A SpecifiedInfo
     """
-    baseline = assay(pool, seeds=seeds)
+    measure = fitness if fitness is not None else lambda candidate: assay(candidate, seeds=seeds)
+    baseline = measure(pool)
     length = _genome_length(pool)
     if length == 0:
         return SpecifiedInfo(fitness=baseline, deleterious_fraction=0.0,
@@ -85,7 +90,7 @@ def specified_information(pool, rng, *, samples=DEFAULT_SAMPLES, seeds=ASSAY_SEE
         mutated = source[:position] + rng.choice(mutation.ALPHABET) + source[position + 1:]
         candidate = list(pool)
         candidate[index] = Protein(mutated)
-        if assay(candidate, seeds=seeds) < baseline:
+        if measure(candidate) < baseline:
             deleterious += 1
     return SpecifiedInfo(fitness=baseline, deleterious_fraction=deleterious / samples,
                          genome_length=length)
