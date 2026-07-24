@@ -6,17 +6,19 @@ kaxis/validate.py; this file is the fuller record, including the log-log slope.
 
 Model: population.py. A constant population must complete K sequential steps;
 every intermediate is selectively NEUTRAL; only the finished K-step genome is
-recorded, at first appearance. Referee: analytic.py.
+recorded, at first appearance. Referee: analytic.py. (As of slice 6 the drift
+resample uses a normal approximation once a class is common, standard and
+statistically equivalent; the numbers below are from that current engine.)
 
 One step (exact geometric appearance time), N=1000, u1=3.36e-5, 4000 replicates:
   simulated = 30.188   analytic = 30.264   ratio = 0.9975
   The engine's mutation supply and timing are exact.
 
 Two steps (neutral intermediate), N=1000, u1=1e-3, 400 replicates per point:
-  u2 = 1.0e-06:  simulated = 1680.2   analytic (D-S) = 500.0   ratio = 3.36
-  u2 = 4.0e-06:  simulated =  834.7   analytic (D-S) = 250.0   ratio = 3.34
-  u2 = 1.6e-05:  simulated =  355.7   analytic (D-S) = 125.0   ratio = 2.85
-  slope of log(mean wait) vs log(u2) = -0.560
+  u2 = 1.0e-06:  simulated = 1738.7   analytic (D-S) = 500.0   ratio = 3.48
+  u2 = 4.0e-06:  simulated =  756.7   analytic (D-S) = 250.0   ratio = 3.03
+  u2 = 1.6e-05:  simulated =  356.5   analytic (D-S) = 125.0   ratio = 2.85
+  slope of log(mean wait) vs log(u2) = -0.571
 
 Reading:
   - The slope is -0.56, i.e. the wait grows like u2^(-1/2), the Durrett-Schmidt

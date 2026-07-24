@@ -1,0 +1,58 @@
+K-axis slice 6: buildability(K), gradient vs no gradient.
+
+How hard is it to build a structure that needs K coordinated parts, and how much
+of the answer is carried by assuming a gradient of useful intermediates exists?
+Same engine (validated in slice 5 for waiting time and here for the selection
+dial), same mutation supply, two regimes:
+
+  - NO GRADIENT: every intermediate is neutral (nothing rewards a half-built
+    structure). No intermediate reward is ever hand-authored; this is the bias
+    guard.
+  - GRADIENT: each completed step is itself beneficial (selection = 0.1), so a
+    partial structure is favored and carried up step by step.
+
+Selection dial validated (population.fixation_fraction vs Kimura, N=1000):
+  s=0.02: simulated 0.0413   Kimura 0.0392
+  s=0.05: simulated 0.0893   Kimura 0.0952
+  s=0.10: simulated 0.1783   Kimura 0.1813
+A beneficial mutant fixes at about Haldane's 2s, so the selection dial is faithful.
+
+--- Time curve (the robust, budget-independent result) ---
+N=1000, step rate=5e-4, selection=0.1, 60 runs each. Mean generations to build:
+   K   no gradient     gradient   cost ratio
+   1           2.5          2.5        1.0x
+   2         101.8         39.4        2.6x
+   3         646.0         79.9        8.1x
+   4        2015.0        125.9       16.0x
+   5        3509.0        179.5       19.5x
+   6        4900.1        222.6       22.0x
+
+With a gradient the cost grows about LINEARLY with K. Without one it grows far
+faster, so the cost RATIO widens with every added part. That widening ratio is
+the measured worth, in generations, of the gradient assumption.
+
+--- Probability collapse (mutation-limited regime) ---
+When mutation supply is low (Nu << 1), each neutral step is an independent rare
+crossing and the no-gradient case does not just get slower, it stops finishing
+within a fixed resource budget. N=150, step rate=6e-5 (Nu=0.009), selection=0.1,
+budget=120000 generations, 60 runs each:
+   K   no-gradient built   no-grad mean time   gradient built   grad time
+   2               1.00              9186.5             1.00       795.5
+   3               1.00             22770.3             1.00      1468.2
+   4               1.00             42393.4             1.00      2301.0
+   5               0.93             62655.0             1.00      2902.1
+   6               0.82             66459.4             1.00      3445.9
+The gradient always builds (cost linear); the no-gradient case starts failing to
+build within the budget as K rises. The build-probability numbers depend on the
+chosen budget, but the direction (gradient builds, no-gradient increasingly does
+not) does not.
+
+Reading: buildability(K) is mild with a gradient and steep without one. The
+apparatus does not decide where real biology sits on the K-axis (how often a
+partial structure is actually rewarded); it makes that the measurable question.
+
+Reproduce:
+  from kaxis import buildability
+  print(buildability.build_stats(6, gradient=False, pop_size=150, rate=6e-5,
+        budget=120000, replicates=60, seed=106))   # (0.82, 66459.4)
+  # time curve: python -m kaxis.buildability
