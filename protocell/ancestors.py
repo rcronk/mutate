@@ -39,3 +39,19 @@ def working_pool():
 def minimal_pool():
     """ :return: A pool too poor to keep a cell alive """
     return [Protein(_INERT)]
+
+
+# Feeds and divides, so it reproduces (and can therefore evolve), but crudely:
+# a fixed intake with no response to hunger. The build-test seed, with headroom
+# above it for selection to find, if it can.
+_CRUDE = '''
+def protein(cell, env):
+    cell.eat(env, 4)
+    if cell.energy > 30:
+        cell.divide()
+'''
+
+
+def crude_pool():
+    """ :return: A reproducing but suboptimal pool, the seed for the build test """
+    return [Protein(_CRUDE)]

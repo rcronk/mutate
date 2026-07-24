@@ -15,6 +15,7 @@ Neither can crash the cell, so mutation is survivable at the pool level.
 import ast
 import contextlib
 import io
+import warnings
 
 
 class Protein:  # pylint: disable=too-few-public-methods
@@ -28,7 +29,8 @@ class Protein:  # pylint: disable=too-few-public-methods
     def _fold(self):
         """ Compiles the source once. :return: True if it yields protein() """
         try:
-            with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stdout(io.StringIO()), warnings.catch_warnings():
+                warnings.simplefilter('ignore')  # mutants routinely trip SyntaxWarning
                 namespace = {}
                 exec(compile(ast.parse(self.source), '<protein>', 'exec'),  # pylint: disable=exec-used
                      namespace)
