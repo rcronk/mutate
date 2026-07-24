@@ -110,6 +110,15 @@ not a paper. We decide that on evidence, later.
      duplication and degradation, not improvement. **Slice 3 needs an
      environment that rewards function (a selection gradient), plus the
      specified-information metric, before build-vs-degrade can be measured.**
+- **Slice 3** (the metric): specified information = constrained sites (positions
+  where a mutation reduces a standardized scarce-world assay fitness), measured
+  by mutation sensitivity as ridge.dfe did for real proteins. Validated: a
+  functional pool has hundreds of constrained sites, a nonfunctional pool has
+  exactly zero (nothing to lose), and junk dilutes the deleterious *fraction*
+  without adding constrained *sites*. So the constrained-site count tracks
+  functional content and ignores junk, which is the property the build-vs-
+  degrade direction needs. **Slice 4 wires this into a population run in an
+  environment that rewards function, and reads off the direction.**
 
 ## Revisable assumptions (expect slice feedback to change these)
 
