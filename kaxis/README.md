@@ -89,11 +89,33 @@ This does not decide where real biology sits on the K-axis (how often a partial
 structure is actually rewarded). It makes that the measurable question, which is
 the honest and un-dismissable form of the argument.
 
+## Slice 7: where real biology sits on the K-axis
+
+The apparatus turns the whole argument into one empirical question: does biology
+supply a gradient of rewarded intermediates, or not? Slice 7 answers it with
+measured data (reusing the ridge/ analyses), not assumption. Weinreich's
+accessibility criteria map exactly onto the kaxis regimes: a strictly uphill path
+is the GRADIENT regime (cheap), a non-decreasing path crossable only through
+neutral steps is the NEUTRAL-INTERMEDIATE regime (the Durrett-Schmidt square-root
+law, steep in K), and a forced fitness drop is a deleterious valley.
+
+- **Tuning end** (GB1 deep scan): the accessible-path share falls with the number
+  of sites that must change together, 43% (K=2), 15% (K=3), 12% (K=4). Real
+  protein data shows gradient availability declining with K.
+- **Beta-lactamase (K=5)** splits into 17% strict gradient, 47% neutral-drift,
+  36% deleterious valley: most of it is not the cheap regime.
+- **De novo end** (Keefe and Szostak 2001): about one ATP binder per 10^11 random
+  sequences, so I = -log2(F) = 37 bits reachable by chance alone. A single simple
+  binder is findable by luck; coordinated machines carry far more information, and
+  scans (all adjacent to an existing enzyme) cannot reach that end.
+
+Placement: landscapes next to an existing enzyme sit in the buildable regime at
+low K (which is why tuning is observed), gradient availability declines with K,
+and where biology's large coordinated machines fall is bracketed by real numbers
+on both ends rather than assumed. Run it: `python -m kaxis.biology`.
+
 ## Next slices
 
-- **Place real biology on the K-axis** using measured data: the ridge/ DMS
-  landscapes for the low-K tuning end, de novo function frequencies such as Keefe
-  and Szostak's 37-bit ATP binders for the "how rare is function at all" end.
 - **A protocell demonstration** of the same K contrast in readable code, so a
   layperson can see the structure that did or did not get built, not only the
   curve.
