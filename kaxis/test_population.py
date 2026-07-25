@@ -51,5 +51,15 @@ class TestWaitingTime(unittest.TestCase):
         self.assertLess(ratio, 7.0)
 
 
+class TestSelection(unittest.TestCase):
+
+    def test_fixation_fraction_matches_kimura(self):
+        # The selection dial: a beneficial mutant fixes at about Kimura's rate.
+        selection = 0.05
+        simulated = population.fixation_fraction(1000, selection, replicates=1500, seed=0)
+        predicted = analytic.fixation_probability(1000, selection)
+        self.assertLess(abs(simulated - predicted), 0.02)
+
+
 if __name__ == '__main__':
     unittest.main()

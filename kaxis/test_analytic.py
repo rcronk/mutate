@@ -34,5 +34,15 @@ class TestTwoStep(unittest.TestCase):
         self.assertAlmostEqual(base / 2.0, analytic.two_step_wait(1000, 2e-3, 1e-5))
 
 
+class TestFixationProbability(unittest.TestCase):
+
+    def test_neutral_mutant_fixes_at_one_over_population(self):
+        self.assertAlmostEqual(1.0 / 1000, analytic.fixation_probability(1000, 0.0))
+
+    def test_small_advantage_approaches_haldane_two_s(self):
+        # Large population, tiny s: fixation probability is about 2s.
+        self.assertAlmostEqual(0.002, analytic.fixation_probability(100000, 0.001), places=5)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -30,3 +30,15 @@ def two_step_wait(pop_size, rate1, rate2):
     Approximation; assumes rate2 << 1 / pop_size (the drift-assisted regime).
     """
     return 1.0 / (2.0 * pop_size * rate1 * math.sqrt(rate2))
+
+
+def fixation_probability(pop_size, sel):
+    """ :return: Kimura's fixation probability of one new (1+sel) mutant.
+
+    (1 - e^-2s) / (1 - e^-2Ns) for a single copy at frequency 1/N. About 2*sel
+    when sel is small and N*sel is large (Haldane). This is the referee for the
+    selection dial.
+    """
+    if sel == 0.0:
+        return 1.0 / pop_size
+    return (1.0 - math.exp(-2.0 * sel)) / (1.0 - math.exp(-2.0 * pop_size * sel))
