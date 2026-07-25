@@ -162,6 +162,21 @@ not a paper. We decide that on evidence, later.
   square-root law (wait grows like 1/sqrt(u2), not 1/u2). The engine is therefore
   not dismissible as rigged, which is the foundation the buildability(K) sweep
   (slice 6) will stand on.
+- **Slices 6-7** (in `kaxis/`): buildability(K) measured (a gradient makes it
+  about linear in K; no gradient makes the cost explode, so the cost ratio widens
+  1x to 22x), then real biology placed on the axis from measured landscape data
+  (accessible-path share declines with K; the de novo end anchored by Keefe-
+  Szostak's 37 bits).
+- **Slice 8** (`protocell/pathway_demo.py`): the readable payoff. A cell builds a
+  pathway of up to K enzymes, each one readable protein in the pool, so a half-
+  built pathway is a real runnable genome. With a gradient (every enzyme helps)
+  the pathway builds at every K; without one (nothing until all K) it collapses
+  as K rises: 100% at K=2-3 down to 0% at K=6, while the gradient stays 100%. The
+  run dumps the evolved protein source, so a layperson SEES the full pathway in
+  the gradient case and the stalled partial one without it. It is a readable
+  illustration of the kaxis result, not new evidence, and says so: each enzyme is
+  gained or lost as a unit (the one-mutation-per-step model), not assembled
+  character by character, which is a separate and harder problem.
 
 ## Revisable assumptions (expect slice feedback to change these)
 
